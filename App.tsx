@@ -6,6 +6,7 @@ import { View, SafeAreaView } from "react-native";
 import { useEffect } from "react";
 import * as MediaLibrary from "expo-media-library";
 import * as ImagePicker from "expo-image-picker";
+import { ErrorBoundary } from './app/components/ErrorBoundary';
 
 export default function App() {
   // 请求权限
@@ -27,13 +28,15 @@ export default function App() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={{ flex: 1 }}>
-          <CanvasView />
-          <Toolbar />
-        </View>
-      </SafeAreaView>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
+            <CanvasView />
+            <Toolbar />
+          </View>
+        </SafeAreaView>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }

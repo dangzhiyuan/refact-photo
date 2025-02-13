@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { Layer, ImageLayer, TextLayer } from "../types/layer";
+import { CanvasStore } from './storeTypes';
+import { logger } from '../utils/logger';
 
 interface CanvasStore {
   layers: Layer[];
@@ -9,22 +11,28 @@ interface CanvasStore {
   updateLayer: (id: string, updates: Partial<Layer>) => void;
   moveLayer: (id: string, position: { x: number; y: number }) => void;
   transformLayer: (id: string, scale: number, rotation: number) => void;
+  updateLayerAdjustments: (layerId: string, adjustments: Partial<Adjustments>) => void;
 }
 
-export const useCanvasStore = create<CanvasStore>((set) => ({
+export const useCanvasStore = create<CanvasStore>((set, get) => ({
   layers: [],
   selectedLayerId: null,
 
-  setSelectedLayerId: (id) => set({ selectedLayerId: id }),
+  setSelectedLayerId: (id: string | null) => {
+    try {
+      set({ selectedLayerId: id });
+    } catch (error) {
+      logger.error('Error in setSelectedLayerId:', error);
+    }
+  },
 
-  addLayer: (layer) =>
-    set((state) => {
-      console.log("Adding layer:", layer.id);
-      return {
-        layers: [...state.layers, layer],
-        selectedLayerId: layer.id,
-      };
-    }),
+  addLayer: (layer: Layer) => {
+    try {
+      set((state) => ({ layers: [...state.layers, layer] }));
+    } catch (error) {
+      logger.error('Error in addLayer:', error);
+    }
+  },
 
   updateLayer: (id, updates) =>
     set((state) => {
@@ -39,19 +47,59 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
       };
     }),
 
-  moveLayer: (id, position) =>
-    set((state) => ({
-      layers: state.layers.map((layer) =>
+  moveLayer: (id: string, position: { x: number; y: number }) => {
+    try {
+      const layers = get().layers.map((layer) =>
         layer.id === id ? { ...layer, position } : layer
-      ),
-    })),
+      );
+      set({ layers });
+    } catch (error) {
+      logger.error('Error in moveLayer:', error);
+    }
+  },
 
-  transformLayer: (id, scale, rotation) =>
-    set((state) => ({
-      layers: state.layers.map((layer) =>
+  transformLayer: (id: string, scale: number, rotation: number) => {
+    try {
+      const layers = get().layers.map((layer) =>
         layer.id === id ? { ...layer, scale, rotation } : layer
-      ),
-    })),
+      );
+      set({ layers });
+    } catch (error) {
+      logger.error('Error in transformLayer:', error);
+    }
+  },
+
+  updateLayerAdjustments: (layerId: string, adjustments: Partial<Adjustments>) => {
+    try {
+      console.log('Store updating adjustments:', {
+        layerId,
+        adjustments
+      });
+      set((state) => {
+        const newLayers = state.layers.map((layer) => {
+          if (layer.id === layerId && layer.type === 'image') {
+            const newLayer = {
+              ...layer,
+              adjustments: {
+                brightness: 0,
+                contrast: 0,
+                saturation: 1,
+                temperature: 0,
+                ...layer.adjustments,
+                ...adjustments,
+              },
+            };
+            console.log('Updated layer:', newLayer);
+            return newLayer;
+          }
+          return layer;
+        });
+        return { layers: newLayers };
+      });
+    } catch (error) {
+      console.error('Error in updateLayerAdjustments:', error);
+    }
+  },
 }));
 
 // 工具函数

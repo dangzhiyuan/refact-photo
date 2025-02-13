@@ -1,19 +1,28 @@
 export interface BaseLayer {
   id: string;
-  type: LayerType;
-  position: { x: number; y: number };
+  type: 'image' | 'text' | 'draw';
+  position: {
+    x: number;
+    y: number;
+  };
   scale: number;
   rotation: number;
   opacity: number;
 }
 
-export type LayerType = "image" | "text" | "draw";
+export interface Adjustments {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  temperature: number;
+}
 
 export interface ImageLayer extends BaseLayer {
-  type: "image";
-  imageSource?: string;
+  type: 'image';
+  imageSource: string;
   filterType?: string;
   filterIntensity?: number;
+  adjustments?: Adjustments;
 }
 
 export interface TextLayer extends BaseLayer {

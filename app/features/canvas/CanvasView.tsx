@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from "react";
 import { Canvas } from "@shopify/react-native-skia";
 import { GestureDetector, Gesture } from "react-native-gesture-handler";
 import { useCanvasStore } from "../../store/useCanvasStore";
@@ -6,10 +7,11 @@ import {
   useSharedValue,
   useAnimatedStyle,
   runOnJS,
+  useAnimatedReaction,
 } from "react-native-reanimated";
 import Animated from "react-native-reanimated";
 import { LayerFactory } from "./layers/LayerFactory";
-import { useCallback } from "react";
+import { ImageLayer } from "../../types/layer";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -21,6 +23,12 @@ export const CanvasView = () => {
     moveLayer,
     transformLayer,
   } = useCanvasStore();
+
+  // 添加错误检查
+  if (!layers || !Array.isArray(layers)) {
+    console.error("Invalid layers data:", layers);
+    return null;
+  }
 
   // 使用 shared values 来处理变换
   const scale = useSharedValue(1);
@@ -37,90 +45,129 @@ export const CanvasView = () => {
     ],
   }));
 
-  // 处理点击选择
-  const handleTap = useCallback(
-    (x: number, y: number) => {
+  // 使用 useAnimatedReaction 处理点击检测
+  const handleTap = useCallback((x: number, y: number, scaleValue: number, offsetValue: { x: number; y: number }) => {
+    try {
       console.log("Canvas tap:", { x, y });
 
+      // 考虑缩放和偏移后的坐标
+      const adjustedX = (x - offsetValue.x) / scaleValue;
+      const adjustedY = (y - offsetValue.y) / scaleValue;
+
       const clickedLayer = [...layers].reverse().find((layer) => {
+        if (!layer || !layer.position) {
+          return false;
+        }
         const { x: layerX, y: layerY } = layer.position;
-        const layerWidth = screenWidth * layer.scale;
-        const layerHeight = screenHeight * layer.scale;
+        const layerWidth = layer.type === 'image' 
+          ? (layer as ImageLayer).imageWidth * layer.scale 
+          : screenWidth * layer.scale;
+        const layerHeight = layer.type === 'image'
+          ? (layer as ImageLayer).imageHeight * layer.scale
+          : screenHeight * layer.scale;
+
         return (
-          x >= layerX &&
-          x <= layerX + layerWidth &&
-          y >= layerY &&
-          y <= layerY + layerHeight
+          adjustedX >= layerX &&
+          adjustedX <= layerX + layerWidth &&
+          adjustedY >= layerY &&
+          adjustedY <= layerY + layerHeight
         );
       });
 
-      console.log("Layer selection:", {
-        clickedLayerId: clickedLayer?.id,
-        previousSelectedId: selectedLayerId,
+      setSelectedLayerId(clickedLayer?.id || null);
+    } catch (error) {
+      console.error("Error in handleTap:", error);
+    }
+  }, [layers, setSelectedLayerId]);
+
+  // 创建手势
+  const gestures = useMemo(() => {
+    const dragGesture = Gesture.Pan()
+      .averageTouches(true)
+      .onUpdate((e) => {
+        try {
+          offset.value = {
+            x: e.translationX + start.value.x,
+            y: e.translationY + start.value.y,
+          };
+        } catch (error) {
+          console.error("Error in drag update:", error);
+        }
+      })
+      .onEnd(() => {
+        try {
+          start.value = {
+            x: offset.value.x,
+            y: offset.value.y,
+          };
+          if (selectedLayerId) {
+            runOnJS(moveLayer)(selectedLayerId, {
+              x: offset.value.x,
+              y: offset.value.y,
+            });
+          }
+        } catch (error) {
+          console.error("Error in drag end:", error);
+        }
       });
 
-      setSelectedLayerId(clickedLayer?.id || null);
-    },
-    [layers, setSelectedLayerId]
-  );
+    const zoomGesture = Gesture.Pinch()
+      .onUpdate((e) => {
+        try {
+          const newScale = savedScale.value * e.scale;
+          scale.value = Math.min(Math.max(0.1, newScale), 5);
+        } catch (error) {
+          console.error("Error in zoom update:", error);
+        }
+      })
+      .onEnd(() => {
+        try {
+          savedScale.value = scale.value;
+          if (selectedLayerId) {
+            runOnJS(transformLayer)(selectedLayerId, scale.value, 0);
+          }
+        } catch (error) {
+          console.error("Error in zoom end:", error);
+        }
+      });
 
-  // 基础手势
-  const dragGesture = Gesture.Pan()
-    .averageTouches(true)
-    .onUpdate((e) => {
+    const tapGesture = Gesture.Tap().onStart((e) => {
       "worklet";
-      offset.value = {
-        x: e.translationX + start.value.x,
-        y: e.translationY + start.value.y,
-      };
-    })
-    .onEnd(() => {
-      "worklet";
-      start.value = {
-        x: offset.value.x,
-        y: offset.value.y,
-      };
-      if (selectedLayerId) {
-        runOnJS(moveLayer)(selectedLayerId, {
-          x: offset.value.x,
-          y: offset.value.y,
-        });
-      }
+      const currentScale = scale.value;
+      const currentOffset = offset.value;
+      runOnJS(handleTap)(e.absoluteX, e.absoluteY, currentScale, currentOffset);
     });
 
-  const zoomGesture = Gesture.Pinch()
-    .onUpdate((e) => {
-      "worklet";
-      scale.value = savedScale.value * e.scale;
-    })
-    .onEnd(() => {
-      "worklet";
-      savedScale.value = scale.value;
-      if (selectedLayerId) {
-        runOnJS(transformLayer)(selectedLayerId, scale.value, 0);
-      }
-    });
-
-  const tapGesture = Gesture.Tap().onStart((e) => {
-    "worklet";
-    runOnJS(handleTap)(e.absoluteX, e.absoluteY);
-  });
-
-  const gesture = Gesture.Simultaneous(dragGesture, zoomGesture, tapGesture);
-
-  console.log("Current layers:", layers);
+    return Gesture.Simultaneous(dragGesture, zoomGesture, tapGesture);
+  }, [selectedLayerId, handleTap, moveLayer, transformLayer]);
 
   return (
-    <View style={{ flex: 1 }}>
-      <GestureDetector gesture={gesture}>
-        <Animated.View style={[{ flex: 1 }, animatedStyles]}>
-          <Canvas style={{ flex: 1, backgroundColor: "#fff" }}>
-            {layers.map((layer, index) => {
-              console.log(`Layer ${index}:`, {
-                id: layer.id,
-                type: layer.type,
-                key: layer.id,
-              });
+    <View style={{ flex: 1, overflow: 'hidden' }}>
+      <GestureDetector gesture={gestures}>
+        <Animated.View 
+          style={[
+            { 
+              flex: 1,
+              width: screenWidth,
+              height: screenHeight,
+            }, 
+            animatedStyles
+          ]}
+        >
+          <Canvas 
+            style={{ 
+              flex: 1,
+              width: '100%',
+              height: '100%',
+              backgroundColor: "#fff" 
+            }}
+          >
+            {layers.map((layer) => {
+              if (!layer || !layer.id) {
+                console.error("Invalid layer:", layer);
+                return null;
+              }
+              
               return (
                 <LayerFactory
                   key={`layer-${layer.id}`}

@@ -7,8 +7,10 @@ export const FILTER_SHADER = Skia.RuntimeEffect.Make(`
   uniform int hasLut;
 
   half4 main(float2 xy) {
+    // 获取原始图片颜色
     vec4 color = image.eval(xy);
-    if(hasLut == 1) {
+    
+    if (hasLut == 1) {
       int r = int(color.r * 255.0 / 4);
       int g = int(color.g * 255.0 / 4);
       int b = int(color.b * 255.0 / 4);

@@ -7,8 +7,10 @@ import { useState } from "react";
 import { FilterName } from "./filters/shaders/FilterShader";
 import { ImageLayer } from "../../types/layer";
 import { createTextLayer } from "../../store/useCanvasStore";
+import { AdjustmentPanel } from './adjustments/components/AdjustmentPanel';
+import { ToolButton } from './components/ToolButton';
 
-type ToolType = "filter" | "template" | "draw" | "text" | "sticker";
+type ToolType = "filter" | "template" | "draw" | "text" | "sticker" | "adjustment";
 
 interface Tool {
   type: ToolType;
@@ -19,7 +21,7 @@ interface Tool {
 export const Toolbar = () => {
   const { layers, updateLayer, selectedLayerId, addLayer } = useCanvasStore();
   const { pickImage } = useImagePicker();
-  const [activeSubTool, setActiveSubTool] = useState<ToolType | null>(null);
+  const [activeToolType, setActiveToolType] = useState<ToolType | null>(null);
 
   // 处理滤镜变化
   const handleFilterChange = (type: FilterName, intensity: number) => {
@@ -77,47 +79,45 @@ export const Toolbar = () => {
   const imageUri =
     firstLayer?.type === "image" ? firstLayer.imageSource : undefined;
 
+  const handleToolPress = (toolType: ToolType) => {
+    setActiveToolType(current => current === toolType ? null : toolType);
+  };
+
   return (
     <>
       <SubToolbar
-        type={activeSubTool}
+        type={activeToolType as ToolType}
         imageUri={imageUri}
         onFilterChange={handleFilterChange}
       />
       <View style={styles.toolbar}>
+        <ToolButton
+          icon="adjust"
+          onPress={() => handleToolPress('adjustment')}
+          isActive={activeToolType === 'adjustment'}
+          label="调整"
+        />
         {tools.map((tool) => (
-          <TouchableOpacity
+          <ToolButton
             key={tool.type}
-            style={[
-              styles.toolButton,
-              activeSubTool === tool.type && styles.activeToolButton,
-            ]}
-            onPress={() => {
-              setActiveSubTool(activeSubTool === tool.type ? null : tool.type);
-            }}
-          >
-            <MaterialIcons
-              name={tool.icon}
-              size={24}
-              color={activeSubTool === tool.type ? "#007AFF" : "#333"}
-            />
-            <Text
-              style={[
-                styles.toolLabel,
-                activeSubTool === tool.type && styles.activeToolLabel,
-              ]}
-            >
-              {tool.label}
-            </Text>
-          </TouchableOpacity>
+            icon={tool.icon}
+            onPress={() => handleToolPress(tool.type)}
+            isActive={activeToolType === tool.type}
+            label={tool.label}
+          />
         ))}
-        {activeSubTool === "text" && (
-          <TouchableOpacity onPress={handleAddText} style={styles.toolButton}>
-            <MaterialIcons name="text-fields" size={24} color="#333" />
-            <Text style={styles.toolLabel}>文字</Text>
-          </TouchableOpacity>
+        {activeToolType === "text" && (
+          <ToolButton
+            icon="text-fields"
+            onPress={handleAddText}
+            label="添加文字"
+          />
         )}
       </View>
+
+      {activeToolType === 'adjustment' && (
+        <AdjustmentPanel onClose={() => setActiveToolType(null)} />
+      )}
     </>
   );
 };
@@ -157,21 +157,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#eee",
     paddingBottom: 20,
-  },
-  toolButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 8,
-  },
-  toolLabel: {
-    marginTop: 4,
-    fontSize: 12,
-    color: "#333",
-  },
-  activeToolButton: {
-    backgroundColor: "#f0f0f0",
-  },
-  activeToolLabel: {
-    color: "#007AFF",
   },
 });
