@@ -1,20 +1,39 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import "react-native-reanimated";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { CanvasView } from "./app/features/canvas/CanvasView";
+import { Toolbar } from "./app/features/tools/Toolbar";
+import { View, SafeAreaView } from "react-native";
+import { useEffect } from "react";
+import * as MediaLibrary from "expo-media-library";
+import * as ImagePicker from "expo-image-picker";
 
 export default function App() {
+  // 请求权限
+  useEffect(() => {
+    (async () => {
+      // 请求 MediaLibrary 权限
+      const mediaLibraryStatus = await MediaLibrary.requestPermissionsAsync();
+      if (mediaLibraryStatus.status !== "granted") {
+        alert("需要相册权限来选择照片");
+      }
+
+      // 请求 ImagePicker 权限
+      const imagePickerStatus =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (imagePickerStatus.status !== "granted") {
+        alert("需要相册权限来选择照片");
+      }
+    })();
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
+          <CanvasView />
+          <Toolbar />
+        </View>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
