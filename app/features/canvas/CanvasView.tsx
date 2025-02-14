@@ -91,13 +91,19 @@ export const CanvasView = () => {
   const zoomGesture = Gesture.Pinch()
     .onUpdate((e) => {
       "worklet";
-      scale.value = savedScale.value * e.scale;
+      // 计算新的缩放值
+      const newScale = savedScale.value * e.scale;
+
+      // 限制缩放范围：最小 0.1，最大 3.0
+      scale.value = Math.min(Math.max(newScale, 0.5), 1.5);
     })
     .onEnd(() => {
       "worklet";
       savedScale.value = scale.value;
       if (selectedLayerId) {
-        runOnJS(transformLayer)(selectedLayerId, scale.value, 0);
+        // 确保最终值也在限制范围内
+        const finalScale = Math.min(Math.max(scale.value, 0.5), 1.5);
+        runOnJS(transformLayer)(selectedLayerId, finalScale, 0);
       }
     });
 

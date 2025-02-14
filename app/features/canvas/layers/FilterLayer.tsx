@@ -1,18 +1,14 @@
 import React, { FC } from "react";
 import {
   Group,
-  Image,
   useImage,
   Shader,
   ImageShader,
-  Fill,
+  Rect,
 } from "@shopify/react-native-skia";
 import { FILTER_SHADER } from "../../tools/filters/shaders/FilterShader";
 import { ImageLayer } from "../../../types/layer";
 import { getLutPath } from "../../tools/filters/utils/utils";
-import { Dimensions } from "react-native";
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 interface FilterLayerProps {
   layer: ImageLayer;
@@ -33,12 +29,8 @@ export const FilterLayer: FC<FilterLayerProps> = ({ layer, isSelected }) => {
     return null;
   }
 
-  const imageRect = {
-    x: 0,
-    y: 0,
-    width: image.width() * layer.scale,
-    height: image.height() * layer.scale,
-  };
+  const imageWidth = image.width();
+  const imageHeight = image.height();
 
   return (
     <Group
@@ -49,7 +41,7 @@ export const FilterLayer: FC<FilterLayerProps> = ({ layer, isSelected }) => {
         { rotate: layer.rotation },
       ]}
     >
-      <Fill>
+      <Rect x={0} y={0} width={imageWidth} height={imageHeight}>
         <Shader
           source={FILTER_SHADER}
           uniforms={{
@@ -57,12 +49,20 @@ export const FilterLayer: FC<FilterLayerProps> = ({ layer, isSelected }) => {
             hasLut,
           }}
         >
-          <ImageShader image={image} fit="cover" rect={imageRect} />
+          <ImageShader
+            image={image}
+            fit="cover"
+            rect={{ x: 0, y: 0, width: imageWidth, height: imageHeight }}
+          />
           {lutImage && (
-            <ImageShader image={lutImage} fit="cover" rect={imageRect} />
+            <ImageShader
+              image={lutImage}
+              fit="cover"
+              rect={{ x: 0, y: 0, width: imageWidth, height: imageHeight }}
+            />
           )}
         </Shader>
-      </Fill>
+      </Rect>
     </Group>
   );
 };
