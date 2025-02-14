@@ -23,7 +23,6 @@ export const FilterLayer: FC<FilterLayerProps> = ({ layer, isSelected }) => {
       : undefined;
 
   const lutImage = useImage(lutPath);
-  const hasLut = lutImage ? 1 : 0;
 
   if (!image) {
     return null;
@@ -32,6 +31,32 @@ export const FilterLayer: FC<FilterLayerProps> = ({ layer, isSelected }) => {
   const imageWidth = image.width();
   const imageHeight = image.height();
 
+  // 基础图层组
+  const baseGroup = (
+    <Group
+      transform={[
+        { translateX: layer.position.x },
+        { translateY: layer.position.y },
+        { scale: layer.scale },
+        { rotate: layer.rotation },
+      ]}
+    >
+      <Rect x={0} y={0} width={imageWidth} height={imageHeight}>
+        <ImageShader
+          image={image}
+          fit="cover"
+          rect={{ x: 0, y: 0, width: imageWidth, height: imageHeight }}
+        />
+      </Rect>
+    </Group>
+  );
+
+  // 如果是 normal 或没有 LUT，返回基础图层
+  if (layer.filterType === "normal" || !lutImage) {
+    return baseGroup;
+  }
+
+  // 返回带滤镜的图层
   return (
     <Group
       transform={[
@@ -45,8 +70,8 @@ export const FilterLayer: FC<FilterLayerProps> = ({ layer, isSelected }) => {
         <Shader
           source={FILTER_SHADER}
           uniforms={{
-            intensity: layer.filterIntensity || 1,
-            hasLut,
+            intensity: layer.filterIntensity || 0,
+            hasLut: 1,
           }}
         >
           <ImageShader
@@ -54,13 +79,11 @@ export const FilterLayer: FC<FilterLayerProps> = ({ layer, isSelected }) => {
             fit="cover"
             rect={{ x: 0, y: 0, width: imageWidth, height: imageHeight }}
           />
-          {lutImage && (
-            <ImageShader
-              image={lutImage}
-              fit="cover"
-              rect={{ x: 0, y: 0, width: imageWidth, height: imageHeight }}
-            />
-          )}
+          <ImageShader
+            image={lutImage}
+            fit="cover"
+            rect={{ x: 0, y: 0, width: 512, height: 512 }}
+          />
         </Shader>
       </Rect>
     </Group>

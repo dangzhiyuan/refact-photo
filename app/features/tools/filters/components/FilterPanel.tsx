@@ -16,28 +16,27 @@ interface FilterPanelProps {
 
 export const FilterPanel = ({ imageUri, onFilterChange }: FilterPanelProps) => {
   const [selectedFilter, setSelectedFilter] = useState<FilterName>("normal");
-  const [intensity, setIntensity] = useState(0.5);
-  const [displayIntensity, setDisplayIntensity] = useState(50); // 用于显示的整数值
+  const [intensity, setIntensity] = useState(0);
+  const [displayIntensity, setDisplayIntensity] = useState(0); // 用于显示的临时值
 
   const handleFilterSelect = (filterName: FilterName) => {
     setSelectedFilter(filterName);
     onFilterChange(filterName, intensity);
   };
 
-  // 分离滑动时的更新和滑动结束时的更新
-  const handleSlidingComplete = useCallback(
-    (value: number) => {
-      const roundedValue = Math.round(value * 100) / 100;
-      setIntensity(roundedValue);
-      setDisplayIntensity(Math.round(roundedValue * 100));
-      onFilterChange(selectedFilter, roundedValue);
-    },
-    [selectedFilter, onFilterChange]
-  );
-
+  // 滑动时只更新显示值
   const handleValueChange = useCallback((value: number) => {
     setDisplayIntensity(Math.round(value * 100));
   }, []);
+
+  // 滑动结束时才更新滤镜和实际强度值
+  const handleSlidingComplete = useCallback(
+    (value: number) => {
+      setIntensity(value);
+      onFilterChange(selectedFilter, value);
+    },
+    [selectedFilter, onFilterChange]
+  );
 
   return (
     <View style={styles.container}>
@@ -46,7 +45,7 @@ export const FilterPanel = ({ imageUri, onFilterChange }: FilterPanelProps) => {
           <FilterPreview
             key={key}
             imageUri={imageUri}
-            filterKey={key}
+            filterKey={key as FilterName}
             intensity={intensity}
             onSelect={handleFilterSelect}
             isSelected={key === selectedFilter}
@@ -54,33 +53,33 @@ export const FilterPanel = ({ imageUri, onFilterChange }: FilterPanelProps) => {
         ))}
       </ScrollView>
 
-      <View style={styles.sliderContainer}>
-        <Text style={styles.intensityLabel}>强度: {displayIntensity}%</Text>
-        <Slider
-          style={styles.slider}
-          minimumValue={0}
-          maximumValue={1}
-          value={intensity}
-          onValueChange={handleValueChange}
-          onSlidingComplete={handleSlidingComplete}
-          step={0.01}
-          thumbTintColor="#000"
-          minimumTrackTintColor="#007AFF"
-          maximumTrackTintColor="#ddd"
-        />
-      </View>
+      {selectedFilter !== "normal" && (
+        <View style={styles.sliderContainer}>
+          <Text style={styles.intensityLabel}>强度: {displayIntensity}%</Text>
+          <Slider
+            style={styles.slider}
+            minimumValue={0}
+            maximumValue={1}
+            value={intensity}
+            onValueChange={handleValueChange}
+            onSlidingComplete={handleSlidingComplete}
+            step={0.01}
+            thumbTintColor="#000"
+            minimumTrackTintColor="#007AFF"
+            maximumTrackTintColor="#ddd"
+          />
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#fff",
     padding: 16,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
   },
   filterList: {
     flexDirection: "row",
@@ -88,7 +87,7 @@ const styles = StyleSheet.create({
   },
   sliderContainer: {
     marginTop: 8,
-    alignItems: "center", // 居中对齐
+    alignItems: "center",
   },
   intensityLabel: {
     fontSize: 12,
@@ -96,7 +95,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   slider: {
-    width: "90%", // 与参考代码一致
+    width: "90%",
     height: 40,
   },
 });
