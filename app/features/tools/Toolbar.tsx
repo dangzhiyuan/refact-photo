@@ -1,24 +1,112 @@
-import React from "react";
-import { View, StyleSheet, Button } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, TouchableOpacity, Text, useWindowDimensions } from "react-native";
 import { useImagePicker } from "../canvas/hooks/useImagePicker";
+import { MaterialIcons } from "@expo/vector-icons";
+import { EditorPanels } from "./panels/EditorPanels";
+
+type ToolType = 'filter' | 'adjustment' | 'text' | null;
+
+interface ToolItem {
+  type: ToolType;
+  icon: keyof typeof MaterialIcons.glyphMap;
+  label: string;
+}
+
+const tools: ToolItem[] = [
+  { type: 'filter', icon: 'filter', label: '滤镜' },
+  { type: 'adjustment', icon: 'tune', label: '调整' },
+  { type: 'text', icon: 'text-fields', label: '文字' },
+];
 
 export const Toolbar = () => {
+  const { height: windowHeight } = useWindowDimensions();
+  const panelHeight = windowHeight * 0.45;
   const { pickImage } = useImagePicker();
+  const [activeTool, setActiveTool] = useState<ToolType>(null);
+
+  const handleToolPress = (toolType: ToolType) => {
+    setActiveTool(current => current === toolType ? null : toolType);
+  };
 
   return (
-    <View style={styles.container}>
-      <Button title="选择图片" onPress={pickImage} />
-      {/* 其他工具按钮 */}
+    <View style={[styles.editorContainer, { height: panelHeight }]}>
+      {activeTool && (
+        <EditorPanels 
+          activeTool={activeTool} 
+          onClose={() => setActiveTool(null)} 
+        />
+      )}
+      <View style={styles.toolbar}>
+        {tools.map((tool) => (
+          <TouchableOpacity
+            key={tool.type}
+            style={[
+              styles.toolButton,
+              activeTool === tool.type && styles.activeToolButton,
+            ]}
+            onPress={() => handleToolPress(tool.type)}
+          >
+            <MaterialIcons
+              name={tool.icon}
+              size={24}
+              color={activeTool === tool.type ? "#007AFF" : "#333"}
+            />
+            <Text
+              style={[
+                styles.toolText,
+                activeTool === tool.type && styles.activeToolText,
+              ]}
+            >
+              {tool.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity style={styles.toolButton} onPress={pickImage}>
+          <MaterialIcons name="add-photo-alternate" size={24} color="#333" />
+          <Text style={styles.toolText}>选择图片</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  editorContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+  },
+  toolbar: {
     height: 80,
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#eee",
     padding: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  toolButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 8,
+    borderRadius: 8,
+  },
+  activeToolButton: {
+    backgroundColor: '#f0f0f0',
+  },
+  toolText: {
+    fontSize: 12,
+    marginTop: 4,
+    color: '#333',
+  },
+  activeToolText: {
+    color: '#007AFF',
   },
 });

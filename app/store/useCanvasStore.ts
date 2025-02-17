@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Layer, ImageLayer, TextLayer } from "../types/layer";
+import { Layer, ImageLayer, TextLayer, Adjustments } from "../types/layer";
 
 interface CanvasStore {
   layers: Layer[];
@@ -9,6 +9,7 @@ interface CanvasStore {
   updateLayer: (id: string, updates: Partial<Layer>) => void;
   moveLayer: (id: string, position: { x: number; y: number }) => void;
   transformLayer: (id: string, scale: number, rotation: number) => void;
+  updateLayerAdjustments: (id: string, adjustments: Partial<Adjustments>) => void;
 }
 
 export const useCanvasStore = create<CanvasStore>((set) => ({
@@ -52,24 +53,42 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
         layer.id === id ? { ...layer, scale, rotation } : layer
       ),
     })),
+
+  updateLayerAdjustments: (id, adjustments) =>
+    set((state) => ({
+      layers: state.layers.map((layer) => {
+        if (layer.id === id && layer.type === 'image') {
+          return {
+            ...layer,
+            adjustments: {
+              ...layer.adjustments,
+              ...adjustments,
+            },
+          };
+        }
+        return layer;
+      }),
+    })),
 }));
 
 // 工具函数
-export const createImageLayer = (imageSource: string): ImageLayer => {
-  const id = `image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  return {
-    id,
-    type: "image",
-    position: { x: 0, y: 0 },
-    scale: 1,
-    rotation: 0,
-    opacity: 1,
-    imageSource,
-    filterType: "normal",
-    filterIntensity: 0,
-  };
-};
+export const createImageLayer = (imageSource: string): ImageLayer => ({
+  id: `image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  type: "image",
+  position: { x: 0, y: 0 },
+  scale: 1,
+  rotation: 0,
+  opacity: 1,
+  imageSource,
+  filterType: "normal",
+  filterIntensity: 0,
+  adjustments: {
+    brightness: 0,
+    contrast: 0,
+    saturation: 1,
+    temperature: 0,
+  },
+});
 
 export const createTextLayer = (text: string = "新建文本"): TextLayer => ({
   id: `text_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
