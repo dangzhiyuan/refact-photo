@@ -2,16 +2,45 @@ import { Dimensions } from "react-native";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-// 预览区域配置
+// Canvas 区域配置
 export const CANVAS_AREA = {
+  // 画布容器
+  container: {
+    heightRatio: 0.55,
+    width: screenWidth,
+  },
+
+  // 实际画布
+  canvas: {
+    widthRatio: 0.85, // 减小宽度比例，使白色背景更窄
+    heightRatio: 0.95,
+  },
+
+  // 缩放限制
+  scale: {
+    min: 0.5,
+    max: 3.0,
+  },
+
+  // 基础尺寸
+  width: screenWidth,
+  height: screenHeight * 0.55,
   x: 0,
   y: 0,
-  width: screenWidth,
-  height: screenHeight * 0.7, // 70% 的屏幕高度给预览区
-  padding: 20,
-  borderColor: "#E0E0E0",
-  borderWidth: 1,
-  backgroundColor: "#FFFFFF",
+  padding: 10,
+};
+
+// 计算实际尺寸
+export const getCanvasDimensions = () => {
+  const containerHeight = screenHeight * CANVAS_AREA.container.heightRatio;
+  const canvasWidth = screenWidth * CANVAS_AREA.canvas.widthRatio;
+  const canvasHeight = containerHeight * CANVAS_AREA.canvas.heightRatio;
+
+  return {
+    containerHeight,
+    canvasWidth,
+    canvasHeight,
+  };
 };
 
 // 工具栏区域配置
@@ -53,10 +82,24 @@ export const computeImageFit = (imageWidth: number, imageHeight: number) => {
 
   // 计算居中位置
   const x = CANVAS_AREA.x + (CANVAS_AREA.width - finalWidth) / 2;
-  const y = CANVAS_AREA.y + (CANVAS_AREA.height - finalHeight) / 3; // 靠上 1/3 位置
+  const y = CANVAS_AREA.y + (CANVAS_AREA.height - finalHeight) / 2; // 修改为正中心
 
   // 计算缩放比例
   const scale = finalWidth / imageWidth;
 
   return { width: finalWidth, height: finalHeight, x, y, scale };
+};
+
+// 菜单布局配置
+export const MENU_LAYOUT = {
+  // 菜单项高度
+  itemHeight: 44,
+  // 菜单项内边距
+  itemPadding: 12,
+  // 图标大小
+  iconSize: 24,
+  // 子菜单缩进
+  subMenuIndent: 16,
+  // 分隔线高度
+  dividerHeight: 1,
 };

@@ -1,35 +1,41 @@
-import { Canvas } from "@shopify/react-native-skia";
-import { GestureDetector, Gesture } from "react-native-gesture-handler";
-import { useCanvasStore } from "../../store/useCanvasStore";
-import { View, Dimensions } from "react-native";
-import {
-  useSharedValue,
+import React, { FC, useMemo, useState } from "react";
+import { View, StyleSheet } from "react-native";
+import { Canvas, Group, Image } from "@shopify/react-native-skia";
+import { GestureDetector } from "react-native-gesture-handler";
+import { colors } from "../../constants/colors";
+import { CANVAS_AREA, getCanvasDimensions } from "../../constants/layout";
+import { calculateFitSize } from "../../utils/layoutUtils";
+import { useImageStore } from "../../store/useImageStore";
+import { useCanvasGestures } from "./hooks/useCanvasGestures";
+import Animated, {
   useAnimatedStyle,
+  useAnimatedReaction,
   runOnJS,
 } from "react-native-reanimated";
-import Animated from "react-native-reanimated";
-import { LayerFactory } from "./layers/LayerFactory";
-import { useCallback } from "react";
+import { GuideLines } from "./components/GuideLines";
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+export const CanvasView: FC = () => {
+  const { selectedImage } = useImageStore();
+  const { gesture, scale, offset, isActive } = useCanvasGestures();
+  const dimensions = useMemo(() => getCanvasDimensions(), []);
+  const [showCrossLine, setShowCrossLine] = useState(false);
 
-export const CanvasView = () => {
-  const {
-    layers,
-    selectedLayerId,
-    setSelectedLayerId,
-    moveLayer,
-    transformLayer,
-  } = useCanvasStore();
+  useAnimatedReaction(
+    () => isActive.value,
+    (active) => {
+      runOnJS(setShowCrossLine)(active);
+      console.log("isActive changed to:", active);
+    }
+  );
 
-  // 使用 shared values 来处理变换
-  const scale = useSharedValue(1);
-  const savedScale = useSharedValue(1);
-  const offset = useSharedValue({ x: 0, y: 0 });
-  const start = useSharedValue({ x: 0, y: 0 });
+  const fitSize = useMemo(() => {
+    if (selectedImage) {
+      return calculateFitSize(selectedImage.width(), selectedImage.height());
+    }
+    return null;
+  }, [selectedImage]);
 
-  // 创建动画样式
-  const animatedStyles = useAnimatedStyle(() => ({
+  const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: offset.value.x },
       { translateY: offset.value.y },
@@ -37,107 +43,82 @@ export const CanvasView = () => {
     ],
   }));
 
-  // 处理点击选择
-  const handleTap = useCallback(
-    (x: number, y: number) => {
-      console.log("Canvas tap:", { x, y });
-
-      const clickedLayer = [...layers].reverse().find((layer) => {
-        const { x: layerX, y: layerY } = layer.position;
-        const layerWidth = screenWidth * layer.scale;
-        const layerHeight = screenHeight * layer.scale;
-        return (
-          x >= layerX &&
-          x <= layerX + layerWidth &&
-          y >= layerY &&
-          y <= layerY + layerHeight
-        );
-      });
-
-      console.log("Layer selection:", {
-        clickedLayerId: clickedLayer?.id,
-        previousSelectedId: selectedLayerId,
-      });
-
-      setSelectedLayerId(clickedLayer?.id || null);
-    },
-    [layers, setSelectedLayerId]
-  );
-
-  // 基础手势
-  const dragGesture = Gesture.Pan()
-    .averageTouches(true)
-    .onUpdate((e) => {
-      "worklet";
-      offset.value = {
-        x: e.translationX + start.value.x,
-        y: e.translationY + start.value.y,
-      };
-    })
-    .onEnd(() => {
-      "worklet";
-      start.value = {
-        x: offset.value.x,
-        y: offset.value.y,
-      };
-      if (selectedLayerId) {
-        runOnJS(moveLayer)(selectedLayerId, {
-          x: offset.value.x,
-          y: offset.value.y,
-        });
-      }
-    });
-
-  const zoomGesture = Gesture.Pinch()
-    .onUpdate((e) => {
-      "worklet";
-      // 计算新的缩放值
-      const newScale = savedScale.value * e.scale;
-
-      // 限制缩放范围：最小 0.1，最大 3.0
-      scale.value = Math.min(Math.max(newScale, 0.5), 1.5);
-    })
-    .onEnd(() => {
-      "worklet";
-      savedScale.value = scale.value;
-      if (selectedLayerId) {
-        // 确保最终值也在限制范围内
-        const finalScale = Math.min(Math.max(scale.value, 0.5), 1.5);
-        runOnJS(transformLayer)(selectedLayerId, finalScale, 0);
-      }
-    });
-
-  const tapGesture = Gesture.Tap().onStart((e) => {
-    "worklet";
-    runOnJS(handleTap)(e.absoluteX, e.absoluteY);
-  });
-
-  const gesture = Gesture.Simultaneous(dragGesture, zoomGesture, tapGesture);
-
-  console.log("Current layers:", layers);
-
   return (
-    <View style={{ flex: 1 }}>
-      <GestureDetector gesture={gesture}>
-        <Animated.View style={[{ flex: 1 }, animatedStyles]}>
-          <Canvas style={{ flex: 1, backgroundColor: "#fff" }}>
-            {layers.map((layer, index) => {
-              console.log(`Layer ${index}:`, {
-                id: layer.id,
-                type: layer.type,
-                key: layer.id,
-              });
-              return (
-                <LayerFactory
-                  key={`layer-${layer.id}`}
-                  layer={layer}
-                  isSelected={layer.id === selectedLayerId}
-                />
-              );
-            })}
-          </Canvas>
-        </Animated.View>
-      </GestureDetector>
+    <View style={[styles.container, { height: dimensions.containerHeight }]}>
+      <View
+        style={[
+          styles.canvasWrapper,
+          {
+            width: dimensions.canvasWidth,
+            height: dimensions.canvasHeight,
+          },
+        ]}
+      >
+        {/* 第一个canvas */}
+        <Canvas style={[styles.guideCanvas]}>
+          {selectedImage && fitSize && showCrossLine && (
+            <GuideLines
+              width={dimensions.canvasWidth}
+              height={dimensions.canvasHeight}
+              showCrossLine={true}
+              showAxis={true}
+              step={50}
+            />
+          )}
+        </Canvas>
+
+        <GestureDetector gesture={gesture}>
+          <Animated.View style={[styles.gestureContainer, animatedStyle]}>
+            <Canvas style={styles.canvas}>
+              <Group>
+                {selectedImage && fitSize && (
+                  <Image
+                    image={selectedImage}
+                    fit="contain"
+                    width={fitSize.width}
+                    height={fitSize.height}
+                    x={fitSize.x}
+                    y={fitSize.y}
+                  />
+                )}
+              </Group>
+            </Canvas>
+          </Animated.View>
+        </GestureDetector>
+      </View>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: colors.windowBk,
+    width: "100%",
+    paddingTop: 20,
+  },
+  canvasWrapper: {
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.whiteBk,
+    alignSelf: "center",
+    borderRadius: 8,
+  },
+  gestureContainer: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    zIndex: 1,
+  },
+  canvas: {
+    width: "100%",
+    height: "100%",
+  },
+  guideCanvas: {
+    position: "absolute",
+    width: "100%",
+    height: "100%",
+    pointerEvents: "none",
+    zIndex: 0,
+  },
+});

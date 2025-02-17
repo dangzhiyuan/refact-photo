@@ -1,9 +1,9 @@
 import "react-native-reanimated";
+import React, { useEffect } from "react";
+import { View, SafeAreaView, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { CanvasView } from "./app/features/canvas/CanvasView";
+import { CanvasView } from "./app/features/canvas";
 import { Toolbar } from "./app/features/tools/Toolbar";
-import { View, SafeAreaView } from "react-native";
-import { useEffect } from "react";
 import * as MediaLibrary from "expo-media-library";
 import * as ImagePicker from "expo-image-picker";
 
@@ -27,9 +27,9 @@ export default function App() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaView style={{ flex: 1 }}>
-        <View style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.root}>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.container}>
           <CanvasView />
           <Toolbar />
         </View>
@@ -37,3 +37,15 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+  },
+});
