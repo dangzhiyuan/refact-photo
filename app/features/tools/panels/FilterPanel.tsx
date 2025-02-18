@@ -1,8 +1,14 @@
-import React, { FC } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Text } from 'react-native';
-import { PanelHeader } from '../components/PanelHeader';
-import { useCanvasStore } from '../../../store/useCanvasStore';
-import { FILTER_NAMES } from '../filters/shaders/FilterShader';
+import React, { FC } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Text,
+} from "react-native";
+import { PanelHeader } from "../components/PanelHeader";
+import { useCanvasStore } from "../../../store/useCanvasStore";
+import { FILTER_NAMES } from "../filters/shaders/FilterShader";
 
 interface FilterPanelProps {
   onClose: () => void;
@@ -23,12 +29,6 @@ export const FilterPanel: FC<FilterPanelProps> = ({ onClose }) => {
     <View style={styles.container}>
       <PanelHeader title="滤镜" onClose={onClose} />
       <ScrollView horizontal style={styles.filterList}>
-        <TouchableOpacity
-          style={styles.filterItem}
-          onPress={() => handleFilterSelect('normal')}
-        >
-          <Text style={styles.filterText}>原图</Text>
-        </TouchableOpacity>
         {Object.keys(FILTER_NAMES).map((filterName) => (
           <TouchableOpacity
             key={filterName}
@@ -45,7 +45,7 @@ export const FilterPanel: FC<FilterPanelProps> = ({ onClose }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   filterList: {
     padding: 16,
@@ -54,10 +54,10 @@ const styles = StyleSheet.create({
     marginRight: 16,
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
   },
   filterText: {
     fontSize: 14,
-    color: '#333',
+    color: "#333",
   },
-}); 
+});

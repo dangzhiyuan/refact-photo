@@ -1,4 +1,5 @@
 import { SkImage, Path, SkPath } from "@shopify/react-native-skia";
+import { LutType } from "./filter";
 
 export type LayerType = "image" | "text" | "draw" | "filter";
 export type BlendMode =
@@ -56,7 +57,7 @@ export interface BaseLayer {
 export interface ImageLayer extends BaseLayer {
   type: "image";
   imageSource: SkImage;
-  filterType?: string;
+  filterType?: LutType;
   filterIntensity?: number;
 }
 

@@ -1,57 +1,62 @@
-import React, { FC } from "react";
-import { View, StyleSheet, Pressable, Image } from "react-native";
-import { FilterName } from "../shaders/FilterShader";
+import React from "react";
+import { TouchableOpacity, Text, Image, StyleSheet } from "react-native";
+import { LutType } from "../../../../types/filter";
+import { filterEngine } from "../FilterEngine";
+import { useImage } from "@shopify/react-native-skia";
 
 interface FilterPreviewProps {
-  imageUri: string;
-  filterKey: string;
-  intensity: number;
-  onSelect: (filterName: FilterName) => void;
-  isSelected?: boolean;
+  name: string;
+  type: LutType;
+  isSelected: boolean;
+  onSelect: () => void;
 }
 
-export const FilterPreview: FC<FilterPreviewProps> = ({
-  imageUri,
-  filterKey,
-  intensity,
-  onSelect,
+export const FilterPreview = ({
+  name,
+  type,
   isSelected,
-}) => {
-  // 这里可以使用预渲染的缩略图或者实时生成的预览图
-  const previewUri = imageUri; // 实际项目中应该使用预渲染的缩略图
+  onSelect,
+}: FilterPreviewProps) => {
+  // 加载预览图片
+  const previewImage = useImage(require("../../../../assets/preview.jpg"));
 
   return (
-    <Pressable onPress={() => onSelect(filterKey as FilterName)}>
-      <View style={[styles.container, isSelected && styles.selectedContainer]}>
-        <View style={styles.previewContainer}>
-          <Image
-            source={{ uri: previewUri }}
-            style={styles.preview}
-            resizeMode="cover"
-          />
-        </View>
-      </View>
-    </Pressable>
+    <TouchableOpacity
+      style={[styles.container, isSelected && styles.selected]}
+      onPress={onSelect}
+    >
+      {previewImage && (
+        <Image
+          source={require("../../../../assets/preview.jpg")}
+          style={styles.preview}
+        />
+      )}
+      <Text style={styles.name}>{name}</Text>
+    </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    marginRight: 8,
+    marginHorizontal: 8,
+    alignItems: "center",
+    opacity: 0.8,
+  },
+  selected: {
+    opacity: 1,
+    borderWidth: 2,
+    borderColor: "#007AFF",
     borderRadius: 8,
-    padding: 2,
   },
-  selectedContainer: {
-    backgroundColor: "#007AFF",
-  },
-  previewContainer: {
+  preview: {
     width: 80,
     height: 80,
     borderRadius: 8,
-    overflow: "hidden",
+    marginBottom: 4,
   },
-  preview: {
-    width: "100%",
-    height: "100%",
+  name: {
+    fontSize: 12,
+    color: "#333",
+    textAlign: "center",
   },
 });
