@@ -1,29 +1,19 @@
+import { Asset } from 'expo-asset';
 import {
   SkImage,
   Skia,
   SkSurface,
   BlendMode,
+  Shader,
+  TileMode,
+  FilterMode,
+  MipmapMode,
+  ImageShader,
 } from "@shopify/react-native-skia";
 import { LutType } from "../../../types/filter";
 import { LutImages } from "../../../assets/luts";
-
-// 定义 LUT 着色器
-const LUT_SHADER = Skia.RuntimeEffect.Make(`
-  uniform shader image;
-  uniform shader luts;
-  uniform float intensity;
-
-  half4 main(float2 xy) {
-    vec4 color = image.eval(xy);
-    int r = int(color.r * 255.0 / 4);
-    int g = int(color.g * 255.0 / 4);
-    int b = int(color.b * 255.0 / 4);
-    float lutX = float(int(mod(float(b), 8.0)) * 64 + r);
-    float lutY = float(int((b / 8) * 64 + g));
-    vec4 lutsColor = luts.eval(float2(lutX, lutY));
-    return mix(color, lutsColor, intensity);
-  }
-`)!;
+import { Platform } from "react-native";
+import { LUT_SHADER } from "./shaders/LutShader";
 
 export interface FilterOptions {
   lutType?: LutType;
@@ -44,19 +34,60 @@ class FilterEngine {
   }
 
   // 加载 LUT 图片
-  async loadLut(type: LutType): Promise<SkImage | null> {
-    if (this.lutCache.has(type)) {
-      return this.lutCache.get(type)!;
-    }
-
+  async loadLut(lutType: LutType): Promise<SkImage | null> {
     try {
-      const lutImage = await this.loadLutImage(type);
-      if (lutImage) {
-        this.lutCache.set(type, lutImage);
+      // 1. 检查缓存
+      if (this.lutCache.has(lutType)) {
+        console.log("Using cached LUT:", lutType);
+        return this.lutCache.get(lutType)!;
       }
-      return lutImage;
+
+      // 2. 如果是原图，直接返回 null
+      if (lutType === 'normal' || !LutImages[lutType]) {
+        console.log("No LUT needed for:", lutType);
+        return null;
+      }
+
+      // 3. 使用 Asset 加载资源
+      const asset = Asset.fromModule(LutImages[lutType]);
+      await asset.downloadAsync();
+      
+      console.log("Asset loaded:", {
+        localUri: asset.localUri,
+        width: asset.width,
+        height: asset.height
+      });
+
+      if (!asset.localUri) {
+        throw new Error("Failed to get local URI for asset");
+      }
+
+      // 4. 从本地文件加载图片数据
+      const response = await fetch(asset.localUri);
+      const buffer = await response.arrayBuffer();
+      const data = Skia.Data.fromBytes(new Uint8Array(buffer));
+      
+      // 5. 创建 Skia 图片
+      const image = Skia.Image.MakeImageFromEncoded(data);
+
+      if (!image) {
+        throw new Error("Failed to decode image");
+      }
+
+      // 6. 存入缓存
+      this.lutCache.set(lutType, image);
+      console.log("Successfully loaded LUT:", {
+        type: lutType,
+        width: image.width(),
+        height: image.height()
+      });
+
+      return image;
     } catch (error) {
-      console.error(`Failed to load LUT: ${type}`, error);
+      console.error("Error loading LUT:", {
+        lutType,
+        error: error instanceof Error ? error.message : String(error)
+      });
       return null;
     }
   }
@@ -77,20 +108,33 @@ class FilterEngine {
 
       const canvas = surface.getCanvas();
 
-      // 绘制源图片
-      canvas.drawImage(sourceImage, 0, 0);
+      // 创建图片着色器
+      const sourceShader = sourceImage.makeShaderOptions(
+        TileMode.Decal,
+        TileMode.Decal,
+        FilterMode.Nearest,
+        MipmapMode.None
+      );
+      const lutShader = lutImage.makeShaderOptions(
+        TileMode.Decal,
+        TileMode.Decal,
+        FilterMode.Nearest,
+        MipmapMode.None
+      );
 
-      // 创建 Paint 对象
+      // 创建 LUT 着色器
+      const shader = LUT_SHADER.makeShaderWithChildren(
+        [intensity],
+        [sourceShader, lutShader]
+      );
+
+      // 绘制
       const paint = Skia.Paint();
-
-      // 设置混合模式 - 使用正确的枚举值
-      paint.setBlendMode(BlendMode.SrcOver);
-
-      // 绘制 LUT 图片
-      canvas.drawImage(lutImage, 0, 0, paint);
-
-      // 设置不透明度
-      paint.setAlphaf(intensity);
+      paint.setShader(shader);
+      canvas.drawRect(
+        { x: 0, y: 0, width: sourceImage.width(), height: sourceImage.height() },
+        paint
+      );
 
       // 获取结果
       const result = surface.makeImageSnapshot();

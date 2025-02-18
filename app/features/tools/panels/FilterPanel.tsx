@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   ScrollView,
   TouchableOpacity,
   Text,
   StyleSheet,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 import { useLayerStore } from "../../../store/useLayerStore";
 import { FILTER_PRESETS, LutType } from "../../../types/filter";
 import { ImageLayer } from "../../../types/layer";
+import { filterEngine } from "../filters/FilterEngine";
 
 interface FilterPanelProps {
   onClose: () => void;
@@ -16,6 +19,7 @@ interface FilterPanelProps {
 
 export const FilterPanel = ({ onClose }: FilterPanelProps) => {
   const { selectedLayerId, layers, updateLayer } = useLayerStore();
+  const [isLoading, setIsLoading] = useState(false);  // 添加 loading 状态
 
   // 获取当前选中的图层
   const selectedLayer = layers.find(
@@ -23,18 +27,43 @@ export const FilterPanel = ({ onClose }: FilterPanelProps) => {
       layer.id === selectedLayerId && layer.type === "image"
   );
 
-  const handleFilterSelect = (filterType: LutType) => {
-    console.log("Filter selected:", filterType);
-    if (!selectedLayerId) {
-      console.log("No layer selected");
-      return;
-    }
+  const handleFilterSelect = async (filterType: LutType) => {
+    try {
+      console.log("Filter selected:", filterType);
+      if (!selectedLayerId) {
+        console.log("No layer selected");
+        return;
+      }
 
-    console.log("Updating layer:", selectedLayerId, filterType);
-    updateLayer(selectedLayerId, {
-      filterType,
-      filterIntensity: 1,
-    } as Partial<ImageLayer>);
+      setIsLoading(true);
+
+      // 预加载 LUT
+      console.log("Loading LUT for type:", filterType);
+      const lutImage = await filterEngine.loadLut(filterType);
+      console.log("LUT load result:", {
+        success: !!lutImage,
+        filterType,
+        imageInfo: lutImage ? {
+          width: lutImage.width(),
+          height: lutImage.height()
+        } : null
+      });
+
+      if (!lutImage && filterType !== 'normal') {
+        throw new Error(`Failed to load LUT: ${filterType}`);
+      }
+
+      console.log("Updating layer:", selectedLayerId, filterType);
+      updateLayer(selectedLayerId, {
+        filterType,
+        filterIntensity: 1,
+      } as Partial<ImageLayer>);
+    } catch (error) {
+      console.error("Error applying filter:", error);
+      Alert.alert("错误", "加载滤镜失败，请重试");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   console.log("Current layer:", selectedLayer);
@@ -59,12 +88,17 @@ export const FilterPanel = ({ onClose }: FilterPanelProps) => {
               key={type}
               style={[styles.filterItem, isSelected && styles.selectedItem]}
               onPress={() => handleFilterSelect(type as LutType)}
+              disabled={isLoading}  // 加载时禁用按钮
             >
-              <Text
-                style={[styles.filterName, isSelected && styles.selectedName]}
-              >
-                {config.name}
-              </Text>
+              {isLoading ? (
+                <ActivityIndicator size="small" color="#007AFF" />
+              ) : (
+                <Text
+                  style={[styles.filterName, isSelected && styles.selectedName]}
+                >
+                  {config.name}
+                </Text>
+              )}
             </TouchableOpacity>
           );
         })}

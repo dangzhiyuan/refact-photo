@@ -2,30 +2,18 @@ import { Skia } from "@shopify/react-native-skia";
 
 // LUT 查找表着色器
 export const LUT_SHADER = Skia.RuntimeEffect.Make(`
+uniform float intensity;  // 必须放在最前面
 uniform shader image;
-uniform shader lutTexture;
-uniform float intensity;
+uniform shader luts;
 
-vec4 main(vec2 xy) {
+half4 main(float2 xy) {
   vec4 color = image.eval(xy);
-  
-  // 将颜色值映射到 LUT 坐标
-  float cell = 64.0;
-  float blueColor = color.b * 255.0;
-  
-  float row = floor(blueColor / 8.0);
-  float col = mod(blueColor, 8.0);
-  
-  float redColor = color.r * 255.0;
-  float greenColor = color.g * 255.0;
-  
-  // 计算 LUT 查找坐标
-  vec2 lutCoord;
-  lutCoord.x = (col * cell + redColor) / 512.0;
-  lutCoord.y = (row * cell + greenColor) / 512.0;
-  
-  // 获取 LUT 颜色并混合
-  vec4 lutColor = lutTexture.eval(lutCoord);
-  return mix(color, lutColor, intensity);
+  int r = int(color.r * 255.0 / 4);
+  int g = int(color.g * 255.0 / 4);
+  int b = int(color.b * 255.0 / 4);
+  float lutX = float(int(mod(float(b), 8.0)) * 64 + r);
+  float lutY = float(int((b / 8) * 64 + g));
+  vec4 lutsColor = luts.eval(float2(lutX, lutY));
+  return mix(color, lutsColor, intensity);
 }
 `)!;
