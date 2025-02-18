@@ -1,14 +1,7 @@
-import React, { FC } from "react";
-import {
-  Group,
-  useImage,
-  Shader,
-  ImageShader,
-  Rect,
-} from "@shopify/react-native-skia";
-import { FILTER_SHADER } from "../../tools/filters/shaders/FilterShader";
+import React, { FC, useMemo } from "react";
+import { Group, Image } from "@shopify/react-native-skia";
 import { ImageLayer } from "../../../types/layer";
-import { getLutPath } from "../../tools/filters/utils/utils";
+import { calculateFitSize } from "../../../utils/layoutUtils";
 
 interface FilterLayerProps {
   layer: ImageLayer;
@@ -16,76 +9,34 @@ interface FilterLayerProps {
 }
 
 export const FilterLayer: FC<FilterLayerProps> = ({ layer, isSelected }) => {
-  const image = useImage(layer.imageSource);
-  const lutPath =
-    layer.filterType && layer.filterType !== "normal"
-      ? getLutPath(layer.filterType)
-      : undefined;
+  const { imageSource, transform, opacity, isVisible } = layer;
 
-  const lutImage = useImage(lutPath);
-
-  if (!image) {
+  // 如果图层不可见或没有图片源，返回 null
+  if (!isVisible || !imageSource) {
     return null;
   }
 
-  const imageWidth = image.width();
-  const imageHeight = image.height();
+  // 计算适配尺寸
+  const fitSize = useMemo(() => {
+    return calculateFitSize(imageSource.width(), imageSource.height());
+  }, [imageSource]);
 
-  // 基础图层组
-  const baseGroup = (
-    <Group
-      transform={[
-        { translateX: layer.position.x },
-        { translateY: layer.position.y },
-        { scale: layer.scale },
-        { rotate: layer.rotation },
-      ]}
-    >
-      <Rect x={0} y={0} width={imageWidth} height={imageHeight}>
-        <ImageShader
-          image={image}
-          fit="cover"
-          rect={{ x: 0, y: 0, width: imageWidth, height: imageHeight }}
-        />
-      </Rect>
-    </Group>
-  );
-
-  // 如果是 normal 或没有 LUT，返回基础图层
-  if (layer.filterType === "normal" || !lutImage) {
-    return baseGroup;
-  }
-
-  // 返回带滤镜的图层
   return (
     <Group
       transform={[
-        { translateX: layer.position.x },
-        { translateY: layer.position.y },
-        { scale: layer.scale },
-        { rotate: layer.rotation },
+        { translateX: transform.position.x },
+        { translateY: transform.position.y },
+        { scale: transform.scale },
+        { rotate: transform.rotation },
       ]}
+      opacity={opacity}
     >
-      <Rect x={0} y={0} width={imageWidth} height={imageHeight}>
-        <Shader
-          source={FILTER_SHADER}
-          uniforms={{
-            intensity: layer.filterIntensity || 0,
-            hasLut: 1,
-          }}
-        >
-          <ImageShader
-            image={image}
-            fit="cover"
-            rect={{ x: 0, y: 0, width: imageWidth, height: imageHeight }}
-          />
-          <ImageShader
-            image={lutImage}
-            fit="cover"
-            rect={{ x: 0, y: 0, width: 512, height: 512 }}
-          />
-        </Shader>
-      </Rect>
+      <Image
+        image={imageSource}
+        fit="contain"
+        width={fitSize.width}
+        height={fitSize.height}
+      />
     </Group>
   );
 };

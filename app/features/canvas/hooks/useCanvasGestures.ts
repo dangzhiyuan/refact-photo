@@ -2,7 +2,15 @@ import { Gesture } from "react-native-gesture-handler";
 import { useSharedValue } from "react-native-reanimated";
 import { CANVAS_AREA } from "../../../constants/layout";
 
-export const useCanvasGestures = () => {
+interface UseCanvasGesturesProps {
+  enabled: boolean;
+  onTransformEnd: (transform: Transform) => void;
+}
+
+export const useCanvasGestures = ({
+  enabled,
+  onTransformEnd,
+}: UseCanvasGesturesProps) => {
   // 共享值
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -52,7 +60,29 @@ export const useCanvasGestures = () => {
     });
 
   // 组合手势
-  const gesture = Gesture.Simultaneous(panGesture, pinchGesture);
+  const gesture = Gesture.Simultaneous(
+    Gesture.Pan()
+      .enabled(enabled)
+      .minPointers(1)
+      .maxPointers(1)
+      .onStart(() => {
+        "worklet";
+        start.value = { ...offset.value };
+        isActive.value = true;
+      })
+      .onUpdate((e) => {
+        "worklet";
+        offset.value = {
+          x: start.value.x + e.translationX,
+          y: start.value.y + e.translationY,
+        };
+      })
+      .onEnd(() => {
+        "worklet";
+        isActive.value = false;
+      }),
+    pinchGesture
+  );
 
   return {
     gesture,

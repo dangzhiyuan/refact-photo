@@ -1,22 +1,31 @@
-import React, { FC, useMemo, useState } from "react";
+import { Canvas } from "@shopify/react-native-skia";
+import { FC, useMemo, useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
-import { Canvas, Group, Image } from "@shopify/react-native-skia";
 import { GestureDetector } from "react-native-gesture-handler";
-import { colors } from "../../constants/colors";
-import { CANVAS_AREA, getCanvasDimensions } from "../../constants/layout";
-import { calculateFitSize } from "../../utils/layoutUtils";
-import { useImageStore } from "../../store/useImageStore";
-import { useCanvasGestures } from "./hooks/useCanvasGestures";
 import Animated, {
   useAnimatedStyle,
   useAnimatedReaction,
   runOnJS,
 } from "react-native-reanimated";
+import { colors } from "../../constants/colors";
+import { getCanvasDimensions } from "../../constants/layout";
+import { useLayerStore } from "../../store/useLayerStore";
 import { GuideLines } from "./components/GuideLines";
+import { LayerRenderer } from "./components/LayerRenderer";
+import { useCanvasGestures } from "./hooks/useCanvasGestures";
 
 export const CanvasView: FC = () => {
-  const { selectedImage } = useImageStore();
-  const { gesture, scale, offset, isActive } = useCanvasGestures();
+  const { selectedLayerId, updateLayer } = useLayerStore();
+
+  const { gesture, scale, offset, isActive } = useCanvasGestures({
+    enabled: !!selectedLayerId, // 只在有选中图层时启用手势
+    onTransformEnd: (transform) => {
+      if (selectedLayerId) {
+        updateLayer(selectedLayerId, { transform });
+      }
+    },
+  });
+
   const dimensions = useMemo(() => getCanvasDimensions(), []);
   const [showCrossLine, setShowCrossLine] = useState(false);
 
@@ -24,16 +33,8 @@ export const CanvasView: FC = () => {
     () => isActive.value,
     (active) => {
       runOnJS(setShowCrossLine)(active);
-      console.log("isActive changed to:", active);
     }
   );
-
-  const fitSize = useMemo(() => {
-    if (selectedImage) {
-      return calculateFitSize(selectedImage.width(), selectedImage.height());
-    }
-    return null;
-  }, [selectedImage]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -54,34 +55,22 @@ export const CanvasView: FC = () => {
           },
         ]}
       >
-        {/* 第一个canvas */}
-        <Canvas style={[styles.guideCanvas]}>
-          {selectedImage && fitSize && showCrossLine && (
-            <GuideLines
-              width={dimensions.canvasWidth}
-              height={dimensions.canvasHeight}
-              showCrossLine={true}
-              showAxis={true}
-              step={50}
-            />
-          )}
+        {/* 参考线画布 */}
+        <Canvas style={styles.guideCanvas}>
+          <GuideLines
+            width={dimensions.canvasWidth}
+            height={dimensions.canvasHeight}
+            showCrossLine={showCrossLine}
+            showAxis={true}
+            step={50}
+          />
         </Canvas>
 
+        {/* 图层渲染画布 */}
         <GestureDetector gesture={gesture}>
           <Animated.View style={[styles.gestureContainer, animatedStyle]}>
             <Canvas style={styles.canvas}>
-              <Group>
-                {selectedImage && fitSize && (
-                  <Image
-                    image={selectedImage}
-                    fit="contain"
-                    width={fitSize.width}
-                    height={fitSize.height}
-                    x={fitSize.x}
-                    y={fitSize.y}
-                  />
-                )}
-              </Group>
+              <LayerRenderer />
             </Canvas>
           </Animated.View>
         </GestureDetector>

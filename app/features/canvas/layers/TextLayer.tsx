@@ -1,5 +1,5 @@
 import React, { FC } from "react";
-import { Group, Text } from "@shopify/react-native-skia";
+import { Group, Text, Skia } from "@shopify/react-native-skia";
 import { TextLayer as TextLayerType } from "../../../types/layer";
 
 interface TextLayerProps {
@@ -8,23 +8,22 @@ interface TextLayerProps {
 }
 
 export const TextLayer: FC<TextLayerProps> = ({ layer, isSelected }) => {
+  const { text, transform, opacity, color, fontSize } = layer;
+
+  // 创建默认字体
+  const defaultFont = Skia.Font(undefined, fontSize);
+
   return (
     <Group
       transform={[
-        { translateX: layer.position.x },
-        { translateY: layer.position.y },
-        { scale: layer.scale },
-        { rotate: layer.rotation },
+        { translateX: transform.position.x },
+        { translateY: transform.position.y },
+        { scale: transform.scale },
+        { rotate: transform.rotation },
       ]}
+      opacity={opacity}
     >
-      <Text
-        text={layer.text}
-        x={0}
-        y={0}
-        size={layer.fontSize}
-        color={layer.color}
-        font={layer.font}
-      />
+      <Text text={text} x={0} y={0} color={color} font={defaultFont} />
     </Group>
   );
 };

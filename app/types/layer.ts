@@ -1,42 +1,84 @@
-export interface BaseLayer {
-  id: string;
-  type: LayerType;
-  position: { x: number; y: number };
+import { SkImage, Path, SkPath } from "@shopify/react-native-skia";
+
+export type LayerType = "image" | "text" | "draw" | "filter";
+export type BlendMode =
+  | "normal"
+  | "multiply"
+  | "screen"
+  | "overlay"
+  | "darken"
+  | "lighten"
+  | "colorDodge"
+  | "colorBurn"
+  | "hardLight"
+  | "softLight"
+  | "difference"
+  | "exclusion"
+  | "hue"
+  | "saturation"
+  | "color"
+  | "luminosity";
+
+export interface Transform {
+  position: {
+    x: number;
+    y: number;
+  };
   scale: number;
   rotation: number;
-  opacity: number;
 }
 
-export type LayerType = "image" | "text" | "draw";
-
 export interface Adjustments {
-  brightness: number;
-  contrast: number;
-  saturation: number;
-  temperature: number;
+  brightness?: number;
+  contrast?: number;
+  saturation?: number;
+  exposure?: number;
+  hue?: number;
+  temperature?: number;
+  tint?: number;
+  highlights?: number;
+  shadows?: number;
+  sharpness?: number;
+}
+
+export interface BaseLayer {
+  id: string;
+  name: string;
+  type: LayerType;
+  isVisible: boolean;
+  opacity: number;
+  blendMode: BlendMode;
+  transform: Transform;
+  zIndex: number;
+  adjustments?: Adjustments;
 }
 
 export interface ImageLayer extends BaseLayer {
   type: "image";
-  imageSource?: string;
+  imageSource: SkImage;
   filterType?: string;
   filterIntensity?: number;
-  adjustments?: Adjustments;
 }
 
 export interface TextLayer extends BaseLayer {
   type: "text";
   text: string;
+  font?: string;
   fontSize: number;
   color: string;
-  font?: string;
-  alignment: "left" | "center" | "right";
-  lineHeight?: number;
 }
 
 export interface DrawLayer extends BaseLayer {
   type: "draw";
-  paths: { x: number; y: number }[][];
+  paths: SkPath[];
+  color: string;
+  strokeWidth: number;
 }
 
-export type Layer = ImageLayer | TextLayer | DrawLayer;
+export interface FilterLayer extends BaseLayer {
+  type: "filter";
+  filter: string;
+  intensity: number;
+}
+
+export type Layer = ImageLayer | TextLayer | DrawLayer | FilterLayer;

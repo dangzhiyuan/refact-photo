@@ -1,41 +1,39 @@
 import { Dimensions } from "react-native";
 import { CANVAS_AREA } from "../constants/layout";
 
+interface Size {
+  width: number;
+  height: number;
+}
+
 // 计算适应屏幕的尺寸
 export const calculateFitSize = (
-  originalWidth: number,
-  originalHeight: number
-) => {
+  imageWidth: number,
+  imageHeight: number
+): Size => {
   const canvasWidth = CANVAS_AREA.width;
   const canvasHeight = CANVAS_AREA.height;
 
   // 计算宽高比
-  const imageRatio = originalWidth / originalHeight;
+  const imageRatio = imageWidth / imageHeight;
   const canvasRatio = canvasWidth / canvasHeight;
 
-  let width: number;
-  let height: number;
+  let finalWidth: number;
+  let finalHeight: number;
 
   if (imageRatio > canvasRatio) {
-    // 图片更宽，以宽度为准
-    width = canvasWidth * 0.9; // 留出一些边距
-    height = width / imageRatio;
+    // 图片更宽，以画布宽度为准
+    finalWidth = canvasWidth * 0.8; // 留出一些边距
+    finalHeight = finalWidth / imageRatio;
   } else {
-    // 图片更高，以高度为准
-    height = canvasHeight * 0.9; // 留出一些边距
-    width = height * imageRatio;
+    // 图片更高，以画布高度为准
+    finalHeight = canvasHeight * 0.8; // 留出一些边距
+    finalWidth = finalHeight * imageRatio;
   }
 
-  // 计算居中位置
-  const x = (canvasWidth - width) / 2;
-  const y = (canvasHeight - height) / 2;
-
   return {
-    width,
-    height,
-    x,
-    y,
-    scale: width / originalWidth,
+    width: finalWidth,
+    height: finalHeight,
   };
 };
 

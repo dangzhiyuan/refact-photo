@@ -27,7 +27,7 @@ export default function App() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <CanvasView />
@@ -39,9 +39,6 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
   safeArea: {
     flex: 1,
   },

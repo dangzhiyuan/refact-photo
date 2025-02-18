@@ -1,40 +1,55 @@
-import React, { FC } from 'react';
-import { View, StyleSheet, useWindowDimensions } from 'react-native';
-import { FilterPanel } from './FilterPanel';
-import { AdjustmentPanel } from './AdjustmentPanel';
-import { TextPanel } from './TextPanel';
+import React, { FC } from "react";
+import { View, StyleSheet, useWindowDimensions } from "react-native";
+import { FilterPanel } from "./FilterPanel";
+import { AdjustmentPanel } from "./AdjustmentPanel";
+import { TextPanel } from "./TextPanel";
+import { LayerPanel } from "../../layers/LayerPanel";
 
-type ToolType = 'filter' | 'adjustment' | 'text' | null;
+type ToolType = "filter" | "adjustment" | "text" | "layers" | null;
 
 interface EditorPanelsProps {
   activeTool: ToolType;
   onClose: () => void;
 }
 
-export const EditorPanels: FC<EditorPanelsProps> = ({ activeTool, onClose }) => {
+export const EditorPanels: FC<EditorPanelsProps> = ({
+  activeTool,
+  onClose,
+}) => {
   const { height: windowHeight } = useWindowDimensions();
   const panelHeight = windowHeight * 0.45; // 45% 的屏幕高度
 
+  const renderPanel = () => {
+    switch (activeTool) {
+      case "layers":
+        return <LayerPanel />;
+      case "filter":
+        return <FilterPanel onClose={onClose} />;
+      case "adjustment":
+        return <AdjustmentPanel onClose={onClose} />;
+      case "text":
+        return <TextPanel onClose={onClose} />;
+      default:
+        return null;
+    }
+  };
+
   return (
-    <View style={[styles.container, { height: panelHeight }]}>
-      <View style={styles.panelContent}>
-        {activeTool === 'filter' && <FilterPanel onClose={onClose} />}
-        {activeTool === 'adjustment' && <AdjustmentPanel onClose={onClose} />}
-        {activeTool === 'text' && <TextPanel onClose={onClose} />}
-      </View>
+    <View style={[styles.container, { height: panelHeight * 0.85 }]}>
+      <View style={styles.panelContent}>{renderPanel()}</View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: "#eee",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     shadowColor: "#000",
@@ -49,4 +64,4 @@ const styles = StyleSheet.create({
   panelContent: {
     flex: 1,
   },
-}); 
+});
