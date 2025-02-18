@@ -58,11 +58,14 @@ export const useLayerStore = create<LayerState>((set) => ({
     }),
 
   updateLayer: <T extends Layer>(id: string, updates: Partial<T>) =>
-    set((state) => ({
-      layers: state.layers.map((layer) =>
-        layer.id === id ? ({ ...layer, ...updates } as Layer) : layer
-      ),
-    })),
+    set((state) => {
+      console.log("Updating layer:", id, updates);
+      const newLayers = state.layers.map((layer) =>
+        layer.id === id ? { ...layer, ...updates } : layer
+      );
+      console.log("New layers:", newLayers);
+      return { layers: newLayers };
+    }),
 
   setSelectedLayer: (layerId) => set({ selectedLayerId: layerId }),
 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet } from "react-native";
+import { FilterPanel } from "../panels/FilterPanel";
 import { ToolButton } from "./ToolButton";
-import { FilterMenu } from "../filters/components/FilterMenu";
 import { useLayerStore } from "../../../store/useLayerStore";
 import { ToolType } from "../../../types/tools";
 
@@ -13,7 +13,7 @@ interface Tool {
 }
 
 export const Toolbar = () => {
-  const [selectedTool, setSelectedTool] = useState<ToolType>(null);
+  const [activePanel, setActivePanel] = useState<string | null>(null);
   const { selectedLayerId, layers } = useLayerStore();
 
   // 获取选中的图层
@@ -29,39 +29,26 @@ export const Toolbar = () => {
     // ... 其他工具
   ];
 
-  // 渲染工具面板
-  const renderPanel = () => {
-    if (!selectedTool) return null;
-
-    switch (selectedTool) {
-      case "filter":
-        return <FilterMenu />;
-      // ... 其他工具面板
-      default:
-        return null;
-    }
-  };
-
   return (
     <View style={styles.container}>
-      {/* 工具按钮列表 */}
-      <View style={styles.toolbar}>
+      <View style={styles.buttons}>
         {tools.map((tool) => (
           <ToolButton
             key={tool.id}
             icon={tool.icon}
             label={tool.label}
-            isActive={selectedTool === tool.id}
+            isActive={activePanel === tool.id}
             disabled={tool.disabled}
             onPress={() =>
-              setSelectedTool(selectedTool === tool.id ? null : tool.id)
+              setActivePanel(activePanel === tool.id ? null : tool.id)
             }
           />
         ))}
       </View>
 
-      {/* 工具面板 */}
-      <View style={styles.panel}>{renderPanel()}</View>
+      {activePanel === "filter" && (
+        <FilterPanel onClose={() => setActivePanel(null)} />
+      )}
     </View>
   );
 };
@@ -73,16 +60,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: "#fff",
+  },
+  buttons: {
+    flexDirection: "row",
+    padding: 8,
     borderTopWidth: 1,
     borderTopColor: "#eee",
-  },
-  toolbar: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    padding: 8,
-  },
-  panel: {
-    minHeight: 0,
-    maxHeight: 300,
   },
 });

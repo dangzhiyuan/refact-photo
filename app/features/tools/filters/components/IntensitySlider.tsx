@@ -7,7 +7,10 @@ interface IntensitySliderProps {
   onChange: (value: number) => void;
 }
 
-export const IntensitySlider = ({ value, onChange }: IntensitySliderProps) => {
+export const IntensitySlider: React.FC<IntensitySliderProps> = ({
+  value,
+  onChange,
+}) => {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>强度: {Math.round(value * 100)}%</Text>
@@ -18,6 +21,7 @@ export const IntensitySlider = ({ value, onChange }: IntensitySliderProps) => {
         value={value}
         onValueChange={onChange}
         step={0.01}
+        minimumTrackTintColor="#007AFF"
       />
     </View>
   );
@@ -26,9 +30,11 @@ export const IntensitySlider = ({ value, onChange }: IntensitySliderProps) => {
 const styles = StyleSheet.create({
   container: {
     padding: 16,
+    backgroundColor: "#fff",
   },
   label: {
     fontSize: 14,
+    color: "#333",
     marginBottom: 8,
   },
   slider: {

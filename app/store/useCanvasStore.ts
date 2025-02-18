@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { Layer, ImageLayer, TextLayer, Adjustments } from "../types/layer";
+import { SkImage } from "@shopify/react-native-skia";
 
 interface CanvasState {
   layers: Layer[];
@@ -69,7 +70,7 @@ export const useCanvasStore = create<CanvasState>((set) => ({
 }));
 
 // 工具函数
-export const createImageLayer = (imageSource: string): ImageLayer => ({
+export const createImageLayer = (imageSource: SkImage): ImageLayer => ({
   id: `image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
   type: "image",
   position: { x: 0, y: 0 },
