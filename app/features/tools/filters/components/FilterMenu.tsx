@@ -27,16 +27,17 @@ export const FilterMenu = () => {
   }, [selectedLayer]);
 
   // 处理滤镜变化
-  const handleFilterChange = (type: LutType, value: number) => {
+  const handleFilterChange = (filterType: LutType, value: number) => {
     if (!selectedLayerId) return;
 
     // 更新本地状态
-    setSelectedFilter(type);
+    setSelectedFilter(filterType);
     setIntensity(value);
 
-    // 更新图层
-    updateLayer(selectedLayerId, {
-      filterType: type,
+    // 更新图层，使用部分更新
+    updateLayer<ImageLayer>(selectedLayerId, {
+      type: "image", // 确保指定图层类型
+      filterType, // 这里的类型应该是正确的
       filterIntensity: value,
     });
   };

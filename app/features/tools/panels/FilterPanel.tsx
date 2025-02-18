@@ -8,7 +8,8 @@ import {
 } from "react-native";
 import { PanelHeader } from "../components/PanelHeader";
 import { useCanvasStore } from "../../../store/useCanvasStore";
-import { FILTER_NAMES } from "../filters/shaders/FilterShader";
+import { FILTER_PRESETS, LutType } from "../../../types/filter";
+import { ImageLayer } from "../../../types/layer";
 
 interface FilterPanelProps {
   onClose: () => void;
@@ -17,25 +18,27 @@ interface FilterPanelProps {
 export const FilterPanel: FC<FilterPanelProps> = ({ onClose }) => {
   const { selectedLayerId, updateLayer } = useCanvasStore();
 
-  const handleFilterSelect = (filterType: string) => {
+  const handleFilterSelect = (filterType: LutType) => {
     if (!selectedLayerId) return;
+
     updateLayer(selectedLayerId, {
+      type: "image",
       filterType,
       filterIntensity: 1,
-    });
+    } as Partial<ImageLayer>);
   };
 
   return (
     <View style={styles.container}>
       <PanelHeader title="滤镜" onClose={onClose} />
       <ScrollView horizontal style={styles.filterList}>
-        {Object.keys(FILTER_NAMES).map((filterName) => (
+        {Object.entries(FILTER_PRESETS).map(([type, config]) => (
           <TouchableOpacity
-            key={filterName}
+            key={type}
             style={styles.filterItem}
-            onPress={() => handleFilterSelect(filterName)}
+            onPress={() => handleFilterSelect(type as LutType)}
           >
-            <Text style={styles.filterText}>{filterName}</Text>
+            <Text style={styles.filterText}>{config.name}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>

@@ -1,7 +1,7 @@
 import { SkImage } from "@shopify/react-native-skia";
 
 // LUT 滤镜类型
-export type LutType = "lut1" | "lut2" | "lut3" | "lut4" | "lut5" | "normal";
+export type LutType = "normal" | "lut1" | "lut2" | "lut3" | "lut4" | "lut5";
 
 // 滤镜配置
 export interface FilterConfig {
@@ -18,4 +18,4 @@ export const FILTER_PRESETS: Record<LutType, FilterConfig> = {
   lut3: { name: "暖阳", lutType: "lut3", intensity: 1 },
   lut4: { name: "冷调", lutType: "lut4", intensity: 1 },
   lut5: { name: "黑白", lutType: "lut5", intensity: 1 },
-};
+} as const;

@@ -10,7 +10,7 @@ interface LayerState {
   addLayer: (layer: Layer) => void;
   removeLayer: (layerId: string) => void;
   duplicateLayer: (layerId: string) => void;
-  updateLayer: (layerId: string, updates: Partial<Layer>) => void;
+  updateLayer: <T extends Layer>(id: string, updates: Partial<T>) => void;
   setSelectedLayer: (layerId: string | null) => void;
   reorderLayers: (fromIndex: number, toIndex: number) => void;
 }
@@ -57,10 +57,10 @@ export const useLayerStore = create<LayerState>((set) => ({
       };
     }),
 
-  updateLayer: (layerId, updates) =>
+  updateLayer: <T extends Layer>(id: string, updates: Partial<T>) =>
     set((state) => ({
       layers: state.layers.map((layer) =>
-        layer.id === layerId ? ({ ...layer, ...updates } as Layer) : layer
+        layer.id === id ? ({ ...layer, ...updates } as Layer) : layer
       ),
     })),
 

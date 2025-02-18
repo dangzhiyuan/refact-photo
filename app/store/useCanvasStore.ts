@@ -1,18 +1,21 @@
 import { create } from "zustand";
 import { Layer, ImageLayer, TextLayer, Adjustments } from "../types/layer";
 
-interface CanvasStore {
+interface CanvasState {
   layers: Layer[];
   selectedLayerId: string | null;
   setSelectedLayerId: (id: string | null) => void;
   addLayer: (layer: Layer) => void;
-  updateLayer: (id: string, updates: Partial<Layer>) => void;
+  updateLayer: <T extends Layer>(id: string, updates: Partial<T>) => void;
   moveLayer: (id: string, position: { x: number; y: number }) => void;
   transformLayer: (id: string, scale: number, rotation: number) => void;
-  updateLayerAdjustments: (id: string, adjustments: Partial<Adjustments>) => void;
+  updateLayerAdjustments: (
+    id: string,
+    adjustments: Partial<Adjustments>
+  ) => void;
 }
 
-export const useCanvasStore = create<CanvasStore>((set) => ({
+export const useCanvasStore = create<CanvasState>((set) => ({
   layers: [],
   selectedLayerId: null,
 
@@ -28,17 +31,11 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
     }),
 
   updateLayer: (id, updates) =>
-    set((state) => {
-      console.log("Updating layer:", {
-        layerId: id,
-        updates,
-      });
-      return {
-        layers: state.layers.map((layer) =>
-          layer.id === id ? { ...layer, ...updates } : layer
-        ),
-      };
-    }),
+    set((state) => ({
+      layers: state.layers.map((layer) =>
+        layer.id === id ? ({ ...layer, ...updates } as Layer) : layer
+      ),
+    })),
 
   moveLayer: (id, position) =>
     set((state) => ({
@@ -57,7 +54,7 @@ export const useCanvasStore = create<CanvasStore>((set) => ({
   updateLayerAdjustments: (id, adjustments) =>
     set((state) => ({
       layers: state.layers.map((layer) => {
-        if (layer.id === id && layer.type === 'image') {
+        if (layer.id === id && layer.type === "image") {
           return {
             ...layer,
             adjustments: {

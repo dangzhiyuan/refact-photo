@@ -20,6 +20,12 @@ export const FilterPanel = ({
   intensity,
   onFilterChange,
 }: FilterPanelProps) => {
+  // 获取所有滤镜预设
+  const filterEntries = Object.entries(FILTER_PRESETS) as [
+    LutType,
+    { name: string }
+  ][];
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -27,13 +33,13 @@ export const FilterPanel = ({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {Object.entries(FILTER_PRESETS).map(([type, config]) => (
+        {filterEntries.map(([type, config]) => (
           <FilterPreview
             key={type}
             name={config.name}
-            type={type as LutType}
+            type={type} // 现在 type 已经是 LutType 类型
             isSelected={type === selectedFilter}
-            onSelect={() => onFilterChange(type as LutType, intensity)}
+            onSelect={() => onFilterChange(type, intensity)}
           />
         ))}
       </ScrollView>
