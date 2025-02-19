@@ -21,11 +21,21 @@ export interface FilterOptions {
 
 class FilterEngine {
   private static instance: FilterEngine;
-  private lutCache: Map<string, SkImage> = new Map();
+  private lutCache = new Map<string, SkImage>();
   private previewCache: Map<string, SkImage> = new Map();
   private filterCache: Map<string, SkImage> = new Map();
+  private loadingLuts = new Map<string, Promise<SkImage | null>>();
+  private processingQueue: {
+    source: SkImage;
+    type: LutType;
+    intensity: number;
+    resolve: (value: SkImage | null) => void;
+  }[] = [];
+  private maxCacheSize: number = 50;
 
-  private constructor() {}
+  private constructor() {
+    this.maxCacheSize = 50;
+  }
 
   static getInstance(): FilterEngine {
     if (!FilterEngine.instance) {
@@ -35,54 +45,41 @@ class FilterEngine {
   }
 
   // 加载 LUT 图片
-  async loadLut(lutType: LutType): Promise<SkImage | null> {
-    try {
-      // 1. 检查缓存
-      if (this.lutCache.has(lutType)) {
-        console.log("Using cached LUT:", lutType);
-        return this.lutCache.get(lutType)!;
-      }
-
-      // 2. 如果是原图，直接返回 null
-      if (lutType === "normal") {
-        console.log("No LUT needed for:", lutType);
-        return null;
-      }
-
-      // 3. 加载 LUT 图片
-      const image = await this.loadLutImage(lutType);
-      if (!image) {
-        throw new Error("Failed to load LUT image");
-      }
-
-      // 4. 存入缓存
-      this.lutCache.set(lutType, image);
-      console.log("Successfully loaded LUT:", {
-        type: lutType,
-        width: image.width(),
-        height: image.height(),
-      });
-
-      return image;
-    } catch (error) {
-      console.error("Error loading LUT:", {
-        lutType,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return null;
+  async loadLut(type: LutType): Promise<SkImage | null> {
+    // 1. 检查缓存
+    if (this.lutCache.has(type)) {
+      return this.lutCache.get(type)!;
     }
+
+    // 2. 检查是否正在加载
+    if (this.loadingLuts.has(type)) {
+      const loadingPromise = this.loadingLuts.get(type);
+      return loadingPromise ? loadingPromise : null;
+    }
+
+    // 3. 开始新的加载
+    const loadPromise = this.loadLutImage(type).then((image) => {
+      if (image) {
+        this.lutCache.set(type, image);
+      }
+      this.loadingLuts.delete(type);
+      return image;
+    });
+
+    this.loadingLuts.set(type, loadPromise);
+    return loadPromise;
   }
 
   // 应用滤镜
   private generateCacheKey(
     sourceImage: SkImage,
     lutType: string,
-    lutImage: SkImage,
-    intensity: number
+    intensity: number,
+    lutImage?: SkImage
   ): string {
-    return `${sourceImage.width()}_${sourceImage.height()}_${lutType}_${lutImage.width()}_${lutImage.height()}_${Math.round(
-      intensity * 100
-    )}`;
+    return `${sourceImage.width()}_${sourceImage.height()}_${lutType}_${
+      lutImage ? `${lutImage.width()}_${lutImage.height()}_` : ""
+    }${Math.round(intensity * 100)}`;
   }
 
   async applyFilter(
@@ -103,8 +100,8 @@ class FilterEngine {
       const cacheKey = this.generateCacheKey(
         sourceImage,
         lutType,
-        lutImage,
-        intensity
+        intensity,
+        lutImage
       );
       console.log("Cache key generated:", cacheKey);
 
@@ -310,6 +307,58 @@ class FilterEngine {
         this.filterCache.delete(key);
       }
     }
+  }
+
+  async getOrProcessImage(
+    source: SkImage,
+    type: LutType,
+    intensity: number
+  ): Promise<SkImage | null> {
+    const cacheKey = this.generateCacheKey(source, type, intensity);
+
+    // 1. 检查结果缓存
+    const cachedResult = this.filterCache.get(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
+    // 2. 预加载 LUT
+    const lutImage = await this.loadLut(type);
+    if (!lutImage) return null;
+
+    // 3. 批量处理优化
+    if (this.processingQueue.length > 0) {
+      return new Promise((resolve) => {
+        this.processingQueue.push({
+          source,
+          type,
+          intensity,
+          resolve,
+        });
+      });
+    }
+
+    // 4. 处理并缓存结果
+    const result = await this.applyFilter(source, lutImage, intensity, type);
+    if (result) {
+      this.filterCache.set(cacheKey, result);
+    }
+
+    return result;
+  }
+
+  // 内存管理
+  private cleanupCache() {
+    if (this.filterCache.size > this.maxCacheSize) {
+      const oldestKey = Array.from(this.filterCache.keys())[0];
+      this.filterCache.delete(oldestKey);
+    }
+  }
+
+  // 允许外部配置缓存大小
+  setMaxCacheSize(size: number) {
+    this.maxCacheSize = size;
+    this.cleanupCache(); // 立即清理超出的缓存
   }
 }
 

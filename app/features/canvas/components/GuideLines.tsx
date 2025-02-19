@@ -15,7 +15,7 @@ export const GuideLines: FC<GuideLinesProps> = ({
   width,
   height,
   visible = true,
-  showAxis = true,
+  showAxis = false,
   showCrossLine = true,
   step = 50,
 }) => {

@@ -12,6 +12,21 @@ interface FilterPanelProps {
   onClose: () => void;
 }
 
+// 获取可能的下一个滤镜
+const getNextPossibleFilters = (currentType: LutType): LutType[] => {
+  const filterTypes = Object.keys(FILTER_PRESETS) as LutType[];
+  const currentIndex = filterTypes.indexOf(currentType);
+
+  // 获取当前滤镜后面的2个滤镜
+  const nextFilters: LutType[] = [];
+  for (let i = 1; i <= 2; i++) {
+    const nextIndex = (currentIndex + i) % filterTypes.length;
+    nextFilters.push(filterTypes[nextIndex]);
+  }
+
+  return nextFilters;
+};
+
 export const FilterPanel = ({ onClose }: FilterPanelProps) => {
   const {
     selectedLayerId,
@@ -28,28 +43,23 @@ export const FilterPanel = ({ onClose }: FilterPanelProps) => {
 
   const handleFilterChange = useCallback(
     async (type: LutType) => {
-      console.log("Starting filter change:", { type });
+      if (!selectedLayerId) return;
 
-      if (!selectedLayerId || !selectedLayer) {
-        console.log("No selected layer");
-        return;
-      }
+      // 预加载下一个可能用到的 LUT
+      const nextFilters = getNextPossibleFilters(type);
+      Promise.all(nextFilters.map((t: LutType) => filterEngine.loadLut(t)));
 
       try {
-        // 预加载 LUT
-        const lutImage = await filterEngine.loadLut(type);
-        console.log("LUT loaded:", { type, success: !!lutImage });
-
-        // 即使 lutImage 为 null (normal 类型) 也要更新
+        await filterEngine.loadLut(type);
         updateLayer(selectedLayerId, {
           filterType: type,
-          filterIntensity: 1, // 重置强度为默认值
+          filterIntensity: 1,
         });
       } catch (error) {
-        console.error("Error changing filter:", error);
+        console.error("Filter change failed:", error);
       }
     },
-    [selectedLayerId, selectedLayer, updateLayer]
+    [selectedLayerId]
   );
 
   const handleIntensityChange = useCallback(

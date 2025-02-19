@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Group, Image, Circle } from "@shopify/react-native-skia";
 import { ImageLayer } from "../../../types/layer";
 import { calculateFitSize } from "../../../utils/layoutUtils";
@@ -24,50 +24,43 @@ const FilterLayerComponent = ({ layer, isSelected }: FilterLayerProps) => {
   const [filteredImage, setFilteredImage] = useState(imageSource);
   const [isLoading, setIsLoading] = useState(false);
 
+  // 使用 useMemo 缓存滤镜参数
+  const filterKey = useMemo(
+    () => `${filterType}_${filterIntensity}`,
+    [filterType, filterIntensity]
+  );
+
   // 当滤镜参数变化时更新图片
   useEffect(() => {
-    let isMounted = true;
-    const applyFilter = async () => {
-      // 如果正在更新中，不执行滤镜应用
-      if (isUpdatingFilter) return;
+    let isCancelled = false;
 
-      // 如果是原图，直接使用原图
-      if (!imageSource || filterType === "normal") {
+    const applyFilter = async () => {
+      // 只在真正需要时才加载 LUT
+      if (filterType === "normal") {
         setFilteredImage(imageSource);
         return;
       }
 
       try {
-        setIsLoading(true);
-
-        const lutImage = await filterEngine.loadLut(filterType);
-        if (!lutImage || !isMounted) return;
-
-        const result = await filterEngine.applyFilter(
+        const result = await filterEngine.getOrProcessImage(
           imageSource,
-          lutImage,
-          filterIntensity,
-          filterType
+          filterType,
+          filterIntensity
         );
 
-        if (isMounted) {
+        if (!isCancelled) {
           setFilteredImage(result || imageSource);
-          setIsLoading(false); // 加载完成
         }
       } catch (error) {
-        console.error("FilterLayer: Filter application failed", error);
-        if (isMounted) {
-          setIsLoading(false); // 出错时也要重置加载状态
-          setFilteredImage(imageSource); // 出错时使用原图
-        }
+        console.error("Filter application failed:", error);
       }
     };
 
     applyFilter();
     return () => {
-      isMounted = false;
+      isCancelled = true;
     };
-  }, [imageSource, filterType, filterIntensity, isUpdatingFilter]);
+  }, [filterKey, imageSource]); // 使用 filterKey 代替单独的依赖
 
   // 如果图层不可见或没有图片源，返回 null
   if (!isVisible || !imageSource) {

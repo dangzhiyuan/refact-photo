@@ -10,7 +10,7 @@ export const colors = {
   windowBk: "#E0E0E1",
   whiteBk: "white",
   background: "#F5F5F5",
-  axisLine: "#E0E0E0",
+  axisLine: "pink",
   axisText: "#999999",
   card: "#FFFFFF",
   text: "#333333",

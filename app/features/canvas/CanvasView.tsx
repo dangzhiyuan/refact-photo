@@ -55,18 +55,20 @@ export const CanvasView: FC = () => {
           },
         ]}
       >
-        {/* 参考线画布,第一个Canvas,整个项目共创建两个Canvas */}
-        <Canvas style={styles.guideCanvas}>
-          <GuideLines
-            width={dimensions.canvasWidth}
-            height={dimensions.canvasHeight}
-            showCrossLine={showCrossLine}
-            showAxis={true}
-            step={50}
-          />
-        </Canvas>
+        {/* 1. 刻度画布 */}
+        <View style={styles.axisContainer} pointerEvents="none">
+          <Canvas style={styles.guideCanvas}>
+            <GuideLines
+              width={dimensions.canvasWidth}
+              height={dimensions.canvasHeight}
+              showCrossLine={false}
+              showAxis={false}
+              step={50}
+            />
+          </Canvas>
+        </View>
 
-        {/* 图层渲染画布 */}
+        {/* 2. 图层渲染画布 */}
         <GestureDetector gesture={gesture}>
           <Animated.View style={[styles.gestureContainer, animatedStyle]}>
             <Canvas style={styles.canvas}>
@@ -74,6 +76,19 @@ export const CanvasView: FC = () => {
             </Canvas>
           </Animated.View>
         </GestureDetector>
+
+        {/* 3. 顶部参考线画布 */}
+        <View style={styles.guideContainer} pointerEvents="none">
+          <Canvas style={styles.guideCanvas}>
+            <GuideLines
+              width={dimensions.canvasWidth}
+              height={dimensions.canvasHeight}
+              showCrossLine={showCrossLine}
+              showAxis={false}
+              step={50}
+            />
+          </Canvas>
+        </View>
       </View>
     </View>
   );
@@ -93,21 +108,34 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     borderRadius: 8,
   },
+  axisContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 0, // 放在最底层
+  },
   gestureContainer: {
     position: "absolute",
     width: "100%",
     height: "100%",
-    zIndex: 1,
+    zIndex: 1, // 图层在中间
   },
   canvas: {
     width: "100%",
     height: "100%",
   },
-  guideCanvas: {
+  guideContainer: {
     position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 100, // 参考线在最上层
+  },
+  guideCanvas: {
     width: "100%",
     height: "100%",
-    pointerEvents: "none",
-    zIndex: 0,
   },
 });

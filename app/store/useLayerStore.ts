@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Layer } from "../types/layer";
+import { Layer, ImageLayer } from "../types/layer";
 import { generateId } from "../utils/idGenerator";
 
 interface LayerState {
@@ -7,7 +7,6 @@ interface LayerState {
   selectedLayerId: string | null;
   displayIntensity: number;
 
-  // 操作方法
   addLayer: (layer: Layer) => void;
   removeLayer: (layerId: string) => void;
   duplicateLayer: (layerId: string) => void;
@@ -40,7 +39,7 @@ export const useLayerStore = create<LayerState>((set) => ({
       const layer = state.layers.find((l) => l.id === layerId);
       if (!layer) return state;
 
-      const newLayer = {
+      const newLayer: Layer = {
         ...layer,
         id: generateId(),
         name: `${layer.name} Copy`,
@@ -55,6 +54,7 @@ export const useLayerStore = create<LayerState>((set) => ({
       };
 
       return {
+        ...state,
         layers: [...state.layers, newLayer],
         selectedLayerId: newLayer.id,
       };
@@ -62,15 +62,14 @@ export const useLayerStore = create<LayerState>((set) => ({
 
   updateLayer: (id, updates) =>
     set((state) => {
-      console.log("Updating layer:", { id, updates });
       const newLayers = state.layers.map((layer) =>
-        layer.id === id ? { ...layer, ...updates } : layer
+        layer.id === id ? ({ ...layer, ...updates } as Layer) : layer
       );
-      console.log("Updated layers:", newLayers);
-      return { layers: newLayers };
+      return { ...state, layers: newLayers };
     }),
 
-  setSelectedLayer: (layerId) => set({ selectedLayerId: layerId }),
+  setSelectedLayer: (layerId) =>
+    set((state) => ({ ...state, selectedLayerId: layerId })),
 
   reorderLayers: (fromIndex: number, toIndex: number) =>
     set((state) => {
@@ -86,8 +85,9 @@ export const useLayerStore = create<LayerState>((set) => ({
         zIndex: (sortedLayers.length - index) * 1000,
       }));
 
-      return { layers: updatedLayers };
+      return { ...state, layers: updatedLayers };
     }),
 
-  setDisplayIntensity: (intensity) => set({ displayIntensity: intensity }),
+  setDisplayIntensity: (intensity) =>
+    set((state) => ({ ...state, displayIntensity: intensity })),
 }));
