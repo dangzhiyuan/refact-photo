@@ -18,7 +18,7 @@ export const CanvasView: FC = () => {
   const { selectedLayerId, updateLayer } = useLayerStore();
 
   const { gesture, scale, offset, isActive } = useCanvasGestures({
-    enabled: !!selectedLayerId, // 只在有选中图层时启用手势
+    enabled: !!selectedLayerId, // 只在选中图层时启用手势
     onTransformEnd: (transform) => {
       if (selectedLayerId) {
         updateLayer(selectedLayerId, { transform });
@@ -55,7 +55,7 @@ export const CanvasView: FC = () => {
           },
         ]}
       >
-        {/* 参考线画布,第一个Canvas */}
+        {/* 参考线画布,第一个Canvas,整个项目共创建两个Canvas */}
         <Canvas style={styles.guideCanvas}>
           <GuideLines
             width={dimensions.canvasWidth}

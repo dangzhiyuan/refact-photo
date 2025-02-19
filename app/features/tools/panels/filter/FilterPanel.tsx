@@ -1,25 +1,16 @@
 import React, { useCallback } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import { useLayerStore } from "../../../../store/useLayerStore";
-import { FILTER_PRESETS } from "../../../../types/filter";
 import { FilterPreview } from "../../filters/components/FilterPreview";
 import { IntensitySlider } from "../../filters/components/IntensitySlider";
 import { ImageLayer } from "../../../../types/layer";
 import { filterEngine } from "../../filters/FilterEngine";
 import { LutType } from "../../../../assets/luts";
+import { FILTER_PRESETS } from "../../../../types/filter";
 
 interface FilterPanelProps {
   onClose: () => void;
 }
-
-const FILTER_ITEMS = [
-  { type: "normal", name: "原图" },
-  { type: "lut1", name: "日系" },
-  { type: "lut2", name: "胶片" },
-  { type: "lut3", name: "黑白" },
-  { type: "lut4", name: "复古" },
-  { type: "lut5", name: "清新" },
-] as const;
 
 export const FilterPanel = ({ onClose }: FilterPanelProps) => {
   const {
@@ -61,11 +52,9 @@ export const FilterPanel = ({ onClose }: FilterPanelProps) => {
     [selectedLayerId, selectedLayer, updateLayer]
   );
 
-  // 使用 debounce 处理强度变化，只在滑动结束时更新
   const handleIntensityChange = useCallback(
     (intensity: number) => {
       if (!selectedLayerId || !selectedLayer) return;
-
       // 只更新显示值，不触发滤镜重新渲染
       setDisplayIntensity(intensity);
     },
@@ -80,17 +69,15 @@ export const FilterPanel = ({ onClose }: FilterPanelProps) => {
       try {
         // 清除之前的缓存
         filterEngine.clearFilterCache(selectedLayer.filterType);
-
-        // 一次性更新，避免多次渲染
+        // 一次性更新
         updateLayer(selectedLayerId, {
           filterIntensity: intensity,
-          isUpdatingFilter: true, // 添加标记，避免触发不必要的重渲染
+          isUpdatingFilter: true, // 避免触发不必要的重渲染
         });
 
         // 等待滤镜应用完成
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // 更新完成
         updateLayer(selectedLayerId, {
           isUpdatingFilter: false,
         });
@@ -110,13 +97,12 @@ export const FilterPanel = ({ onClose }: FilterPanelProps) => {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {FILTER_ITEMS.map((item) => (
+        {Object.entries(FILTER_PRESETS).map(([type, preset]) => (
           <FilterPreview
-            key={item.type}
-            name={item.name}
-            type={item.type}
-            isSelected={selectedLayer?.filterType === item.type}
-            onSelect={() => handleFilterChange(item.type)}
+            key={type}
+            type={type as LutType}
+            isSelected={selectedLayer?.filterType === type}
+            onSelect={() => handleFilterChange(type as LutType)}
           />
         ))}
       </ScrollView>

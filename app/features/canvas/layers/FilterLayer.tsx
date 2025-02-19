@@ -20,26 +20,19 @@ const FilterLayerComponent = ({ layer, isSelected }: FilterLayerProps) => {
     isUpdatingFilter,
   } = layer;
 
-  // 使用 state 存储处理后的图片
+  // 存储滤镜处理后的图片
   const [filteredImage, setFilteredImage] = useState(imageSource);
   const [isLoading, setIsLoading] = useState(false);
 
   // 当滤镜参数变化时更新图片
   useEffect(() => {
     let isMounted = true;
-
     const applyFilter = async () => {
       // 如果正在更新中，不执行滤镜应用
       if (isUpdatingFilter) return;
 
-      console.log("FilterLayer: Starting filter application", {
-        filterType,
-        filterIntensity,
-        hasImage: !!imageSource,
-      });
-
+      // 如果是原图，直接使用原图
       if (!imageSource || filterType === "normal") {
-        console.log("FilterLayer: Using original image");
         setFilteredImage(imageSource);
         return;
       }
@@ -47,19 +40,9 @@ const FilterLayerComponent = ({ layer, isSelected }: FilterLayerProps) => {
       try {
         setIsLoading(true);
 
-        // 加载 LUT 图片
         const lutImage = await filterEngine.loadLut(filterType);
-        console.log("FilterLayer: LUT loaded", {
-          success: !!lutImage,
-          filterType,
-        });
+        if (!lutImage || !isMounted) return;
 
-        if (!lutImage || !isMounted) {
-          console.log("FilterLayer: No LUT or unmounted");
-          return;
-        }
-
-        // 应用滤镜
         const result = await filterEngine.applyFilter(
           imageSource,
           lutImage,
@@ -67,25 +50,20 @@ const FilterLayerComponent = ({ layer, isSelected }: FilterLayerProps) => {
           filterType
         );
 
-        console.log("FilterLayer: Filter applied", {
-          success: !!result,
-          filterType,
-        });
-
         if (isMounted) {
           setFilteredImage(result || imageSource);
+          setIsLoading(false); // 加载完成
         }
       } catch (error) {
         console.error("FilterLayer: Filter application failed", error);
-      } finally {
         if (isMounted) {
-          setIsLoading(false);
+          setIsLoading(false); // 出错时也要重置加载状态
+          setFilteredImage(imageSource); // 出错时使用原图
         }
       }
     };
 
     applyFilter();
-
     return () => {
       isMounted = false;
     };
@@ -96,7 +74,7 @@ const FilterLayerComponent = ({ layer, isSelected }: FilterLayerProps) => {
     return null;
   }
 
-  // 计算适配尺寸
+  // 适配尺寸
   const fitSize = calculateFitSize(imageSource.width(), imageSource.height());
 
   return (
@@ -115,14 +93,6 @@ const FilterLayerComponent = ({ layer, isSelected }: FilterLayerProps) => {
         height={fitSize.height}
         fit="contain"
       />
-      {isLoading && (
-        <Circle
-          cx={fitSize.width / 2}
-          cy={fitSize.height / 2}
-          r={20}
-          color="#007AFF"
-        />
-      )}
     </Group>
   );
 };

@@ -1,8 +1,9 @@
-import React, { useCallback, useState, useRef } from "react";
+import React, { useCallback, useRef, useEffect } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useSharedValue, withSpring } from "react-native-reanimated";
 import { debounce } from "lodash";
+import { colors } from "../../../../constants/colors";
 
 interface IntensitySliderProps {
   value: number;
@@ -19,11 +20,9 @@ export const IntensitySlider: React.FC<IntensitySliderProps> = ({
 }) => {
   const animatedIntensity = useSharedValue(value);
 
-  // 使用 useRef 保存 debounced 函数，避免重新创建
+  // 使用 useRef 保存 debounced 函数
   const debouncedComplete = useRef(
-    debounce((value: number) => {
-      onComplete(value);
-    }, 500) // 500ms 延迟
+    debounce((value: number) => onComplete(value), 300) // 减少延迟到 300ms
   ).current;
 
   // 滑动时更新显示值
@@ -34,12 +33,12 @@ export const IntensitySlider: React.FC<IntensitySliderProps> = ({
         stiffness: 100,
         damping: 10,
       });
-      onChange(newValue); // 实时更新UI
+      onChange(newValue);
     },
-    [onChange]
+    [animatedIntensity, onChange]
   );
 
-  // 滑动结束时延迟应用滤镜
+  // 滑动结束时应用滤镜
   const handleSlidingComplete = useCallback(
     (finalValue: number) => {
       debouncedComplete(finalValue);
@@ -47,8 +46,8 @@ export const IntensitySlider: React.FC<IntensitySliderProps> = ({
     [debouncedComplete]
   );
 
-  // 组件卸载时取消待处理的 debounced 调用
-  React.useEffect(() => {
+  // 清理 debounced 函数
+  useEffect(() => {
     return () => {
       debouncedComplete.cancel();
     };
@@ -56,7 +55,10 @@ export const IntensitySlider: React.FC<IntensitySliderProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>强度: {Math.round(displayValue * 100)}%</Text>
+      <View style={styles.header}>
+        <Text style={styles.label}>强度</Text>
+        <Text style={styles.value}>{Math.round(displayValue * 100)}%</Text>
+      </View>
       <Slider
         style={styles.slider}
         minimumValue={0}
@@ -65,7 +67,8 @@ export const IntensitySlider: React.FC<IntensitySliderProps> = ({
         onValueChange={handleValueChange}
         onSlidingComplete={handleSlidingComplete}
         step={0.01}
-        minimumTrackTintColor="#007AFF"
+        minimumTrackTintColor={colors.primary}
+        maximumTrackTintColor={colors.border}
       />
     </View>
   );
@@ -74,12 +77,22 @@ export const IntensitySlider: React.FC<IntensitySliderProps> = ({
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.whiteBk,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
   },
   label: {
     fontSize: 14,
-    color: "#333",
-    marginBottom: 8,
+    color: colors.text,
+  },
+  value: {
+    fontSize: 14,
+    color: colors.text,
+    fontWeight: "500",
   },
   slider: {
     width: "100%",
