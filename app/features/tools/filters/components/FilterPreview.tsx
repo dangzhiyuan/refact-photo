@@ -1,8 +1,7 @@
 import React from "react";
-import { TouchableOpacity, Text, Image, StyleSheet } from "react-native";
+import { TouchableOpacity, Text, Image, StyleSheet, View } from "react-native";
 import { LutType } from "../../../../types/filter";
-import { filterEngine } from "../FilterEngine";
-import { useImage } from "@shopify/react-native-skia";
+import { LutImages } from "../../../../assets/luts";
 
 interface FilterPreviewProps {
   name: string;
@@ -11,25 +10,24 @@ interface FilterPreviewProps {
   onSelect: () => void;
 }
 
-export const FilterPreview = ({
+export const FilterPreview: React.FC<FilterPreviewProps> = ({
   name,
   type,
   isSelected,
   onSelect,
-}: FilterPreviewProps) => {
-  // 加载预览图片
-  const previewImage = useImage(require("../../../../assets/preview.jpg"));
+}) => {
+  // 对于 normal 类型，不显示 LUT 预览图
+  const lutPreviewSource = type === "normal" ? null : LutImages[type];
 
   return (
     <TouchableOpacity
       style={[styles.container, isSelected && styles.selected]}
       onPress={onSelect}
     >
-      {previewImage && (
-        <Image
-          source={require("../../../../assets/preview.jpg")}
-          style={styles.preview}
-        />
+      {lutPreviewSource ? (
+        <Image source={lutPreviewSource} style={styles.preview} />
+      ) : (
+        <View style={styles.placeholder} />
       )}
       <Text style={styles.name}>{name}</Text>
     </TouchableOpacity>
@@ -38,20 +36,28 @@ export const FilterPreview = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 8,
     alignItems: "center",
-    opacity: 0.8,
+    marginHorizontal: 8,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+    borderWidth: 2,
+    borderColor: "transparent",
   },
   selected: {
-    opacity: 1,
-    borderWidth: 2,
     borderColor: "#007AFF",
-    borderRadius: 8,
   },
   preview: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: 64,
+    height: 32,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  placeholder: {
+    width: 64,
+    height: 32,
+    borderRadius: 4,
+    backgroundColor: "#e0e0e0",
     marginBottom: 4,
   },
   name: {

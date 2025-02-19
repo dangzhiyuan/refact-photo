@@ -5,19 +5,22 @@ import { generateId } from "../utils/idGenerator";
 interface LayerState {
   layers: Layer[];
   selectedLayerId: string | null;
+  displayIntensity: number;
 
   // 操作方法
   addLayer: (layer: Layer) => void;
   removeLayer: (layerId: string) => void;
   duplicateLayer: (layerId: string) => void;
-  updateLayer: <T extends Layer>(id: string, updates: Partial<T>) => void;
+  updateLayer: (id: string, updates: Partial<Layer>) => void;
   setSelectedLayer: (layerId: string | null) => void;
   reorderLayers: (fromIndex: number, toIndex: number) => void;
+  setDisplayIntensity: (intensity: number) => void;
 }
 
 export const useLayerStore = create<LayerState>((set) => ({
   layers: [],
   selectedLayerId: null,
+  displayIntensity: 1,
 
   addLayer: (layer) =>
     set((state) => ({
@@ -57,13 +60,13 @@ export const useLayerStore = create<LayerState>((set) => ({
       };
     }),
 
-  updateLayer: <T extends Layer>(id: string, updates: Partial<T>) =>
+  updateLayer: (id, updates) =>
     set((state) => {
-      console.log("Updating layer:", id, updates);
+      console.log("Updating layer:", { id, updates });
       const newLayers = state.layers.map((layer) =>
         layer.id === id ? { ...layer, ...updates } : layer
       );
-      console.log("New layers:", newLayers);
+      console.log("Updated layers:", newLayers);
       return { layers: newLayers };
     }),
 
@@ -85,4 +88,6 @@ export const useLayerStore = create<LayerState>((set) => ({
 
       return { layers: updatedLayers };
     }),
+
+  setDisplayIntensity: (intensity) => set({ displayIntensity: intensity }),
 }));

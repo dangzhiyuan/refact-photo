@@ -41,14 +41,31 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   moveLayer: (id, position) =>
     set((state) => ({
       layers: state.layers.map((layer) =>
-        layer.id === id ? { ...layer, position } : layer
+        layer.id === id
+          ? {
+              ...layer,
+              transform: {
+                ...layer.transform,
+                position,
+              },
+            }
+          : layer
       ),
     })),
 
   transformLayer: (id, scale, rotation) =>
     set((state) => ({
       layers: state.layers.map((layer) =>
-        layer.id === id ? { ...layer, scale, rotation } : layer
+        layer.id === id
+          ? {
+              ...layer,
+              transform: {
+                ...layer.transform,
+                scale,
+                rotation,
+              },
+            }
+          : layer
       ),
     })),
 
@@ -72,11 +89,17 @@ export const useCanvasStore = create<CanvasState>((set) => ({
 // 工具函数
 export const createImageLayer = (imageSource: SkImage): ImageLayer => ({
   id: `image_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  name: "新建图片",
   type: "image",
-  position: { x: 0, y: 0 },
-  scale: 1,
-  rotation: 0,
+  transform: {
+    position: { x: 0, y: 0 },
+    scale: 1,
+    rotation: 0,
+  },
+  isVisible: true,
   opacity: 1,
+  blendMode: "normal",
+  zIndex: Date.now(),
   imageSource,
   filterType: "normal",
   filterIntensity: 0,
@@ -90,13 +113,18 @@ export const createImageLayer = (imageSource: SkImage): ImageLayer => ({
 
 export const createTextLayer = (text: string = "新建文本"): TextLayer => ({
   id: `text_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+  name: "新建文本",
   type: "text",
+  transform: {
+    position: { x: 100, y: 100 },
+    scale: 1,
+    rotation: 0,
+  },
+  isVisible: true,
+  opacity: 1,
+  blendMode: "normal",
+  zIndex: Date.now(),
   text,
   fontSize: 24,
   color: "#000000",
-  position: { x: 100, y: 100 },
-  scale: 1,
-  rotation: 0,
-  opacity: 1,
-  alignment: "left",
 });
