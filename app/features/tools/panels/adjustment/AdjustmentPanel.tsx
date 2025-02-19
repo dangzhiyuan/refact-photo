@@ -1,9 +1,9 @@
-import React, { FC, useState } from 'react';
-import { View, StyleSheet, Text } from 'react-native';
-import { PanelHeader } from '../components/PanelHeader';
-import { useCanvasStore } from '../../../store/useCanvasStore';
-import Slider from '@react-native-community/slider';
-import { Adjustments } from '../../../types/layer';
+import React, { FC, useState } from "react";
+import { View, StyleSheet, Text } from "react-native";
+import { PanelHeader } from "../components/PanelHeader";
+import { useCanvasStore } from "../../../../store/useCanvasStore";
+import Slider from "@react-native-community/slider";
+import { Adjustments } from "../../../../types/layer";
 
 interface AdjustmentPanelProps {
   onClose: () => void;
@@ -40,7 +40,9 @@ export const AdjustmentPanel: FC<AdjustmentPanelProps> = ({ onClose }) => {
             minimumValue={-0.5}
             maximumValue={0.5}
             value={adjustments.brightness}
-            onValueChange={(value) => handleAdjustmentChange('brightness', value)}
+            onValueChange={(value) =>
+              handleAdjustmentChange("brightness", value)
+            }
           />
         </View>
         <View style={styles.sliderRow}>
@@ -50,7 +52,7 @@ export const AdjustmentPanel: FC<AdjustmentPanelProps> = ({ onClose }) => {
             minimumValue={-0.5}
             maximumValue={0.5}
             value={adjustments.contrast}
-            onValueChange={(value) => handleAdjustmentChange('contrast', value)}
+            onValueChange={(value) => handleAdjustmentChange("contrast", value)}
           />
         </View>
         <View style={styles.sliderRow}>
@@ -60,7 +62,9 @@ export const AdjustmentPanel: FC<AdjustmentPanelProps> = ({ onClose }) => {
             minimumValue={0.5}
             maximumValue={1.5}
             value={adjustments.saturation}
-            onValueChange={(value) => handleAdjustmentChange('saturation', value)}
+            onValueChange={(value) =>
+              handleAdjustmentChange("saturation", value)
+            }
           />
         </View>
         <View style={styles.sliderRow}>
@@ -70,7 +74,9 @@ export const AdjustmentPanel: FC<AdjustmentPanelProps> = ({ onClose }) => {
             minimumValue={-0.5}
             maximumValue={0.5}
             value={adjustments.temperature}
-            onValueChange={(value) => handleAdjustmentChange('temperature', value)}
+            onValueChange={(value) =>
+              handleAdjustmentChange("temperature", value)
+            }
           />
         </View>
       </View>
@@ -80,7 +86,7 @@ export const AdjustmentPanel: FC<AdjustmentPanelProps> = ({ onClose }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   sliderContainer: {
     padding: 16,
@@ -90,11 +96,11 @@ const styles = StyleSheet.create({
   },
   sliderLabel: {
     fontSize: 14,
-    color: '#333',
+    color: "#333",
     marginBottom: 8,
   },
   slider: {
-    width: '100%',
+    width: "100%",
     height: 40,
   },
-}); 
+});

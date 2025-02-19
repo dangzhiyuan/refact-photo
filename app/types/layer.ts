@@ -1,5 +1,5 @@
 import { SkImage, Path, SkPath } from "@shopify/react-native-skia";
-import { LutType } from "./filter";
+import { LutType } from "../assets/luts";
 
 export type LayerType = "image" | "text" | "draw" | "filter";
 export type BlendMode =

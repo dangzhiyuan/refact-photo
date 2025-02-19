@@ -6,7 +6,7 @@ import {
   Text,
   useWindowDimensions,
 } from "react-native";
-import { useImagePicker } from "../canvas/hooks/useImagePicker";
+import { useImageManager } from "../../hooks";
 import { MaterialIcons } from "@expo/vector-icons";
 import { EditorPanels } from "./panels/EditorPanels";
 
@@ -33,7 +33,7 @@ interface EditorPanelsProps {
 export const Toolbar = () => {
   const { height: windowHeight } = useWindowDimensions();
   const panelHeight = windowHeight * 0.45;
-  const { pickImage } = useImagePicker();
+  const { pickImage, takePhoto, isLoading } = useImageManager();
   const [activeTool, setActiveTool] = useState<ToolType>(null);
 
   const handleToolPress = (toolType: ToolType) => {

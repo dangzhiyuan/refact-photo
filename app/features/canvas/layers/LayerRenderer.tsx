@@ -1,7 +1,7 @@
 import React, { FC } from "react";
 import { Group } from "@shopify/react-native-skia";
 import { useLayerStore } from "../../../store/useLayerStore";
-import { LayerFactory } from "../layers/LayerFactory";
+import { LayerFactory } from "./LayerFactory";
 
 export const LayerRenderer: FC = () => {
   const { layers, selectedLayerId } = useLayerStore();

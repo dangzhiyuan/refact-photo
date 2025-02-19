@@ -10,10 +10,9 @@ import {
   MipmapMode,
   ImageShader,
 } from "@shopify/react-native-skia";
-import { LutType } from "../../../types/filter";
-import { LutImages } from "../../../assets/luts";
-import { Platform } from "react-native";
+import { LutType } from "../../../assets/luts";
 import { LUT_SHADER } from "./shaders/LutShader";
+import { getLutImage } from "../../../assets/luts";
 
 export interface FilterOptions {
   lutType?: LutType;
@@ -45,38 +44,18 @@ class FilterEngine {
       }
 
       // 2. 如果是原图，直接返回 null
-      if (lutType === "normal" || !LutImages[lutType]) {
+      if (lutType === "normal") {
         console.log("No LUT needed for:", lutType);
         return null;
       }
 
-      // 3. 使用 Asset 加载资源
-      const asset = Asset.fromModule(LutImages[lutType]);
-      await asset.downloadAsync();
-
-      console.log("Asset loaded:", {
-        localUri: asset.localUri,
-        width: asset.width,
-        height: asset.height,
-      });
-
-      if (!asset.localUri) {
-        throw new Error("Failed to get local URI for asset");
-      }
-
-      // 4. 从本地文件加载图片数据
-      const response = await fetch(asset.localUri);
-      const buffer = await response.arrayBuffer();
-      const data = Skia.Data.fromBytes(new Uint8Array(buffer));
-
-      // 5. 创建 Skia 图片
-      const image = Skia.Image.MakeImageFromEncoded(data);
-
+      // 3. 加载 LUT 图片
+      const image = await this.loadLutImage(lutType);
       if (!image) {
-        throw new Error("Failed to decode image");
+        throw new Error("Failed to load LUT image");
       }
 
-      // 6. 存入缓存
+      // 4. 存入缓存
       this.lutCache.set(lutType, image);
       console.log("Successfully loaded LUT:", {
         type: lutType,
@@ -248,11 +227,17 @@ class FilterEngine {
       // 如果是原图，直接返回 null
       if (type === "normal") return null;
 
-      const lutResource = LutImages[type];
+      const lutResource = getLutImage(type);
       if (!lutResource) return null;
 
-      // 使用 Skia 的 Data API
-      const response = await fetch(lutResource);
+      // 使用 Asset 加载资源
+      const asset = await Asset.loadAsync(lutResource);
+      if (!asset || !asset[0].localUri) {
+        throw new Error("Failed to load LUT asset");
+      }
+
+      // 使用本地 URI 获取图片数据
+      const response = await fetch(asset[0].localUri);
       const buffer = await response.arrayBuffer();
       const data = Skia.Data.fromBytes(new Uint8Array(buffer));
 

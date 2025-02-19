@@ -1,10 +1,19 @@
+const BASIC_COLORS = {
+  black: "#000000",
+  white: "#FFFFFF",
+  grey: "#E0E0E0",
+};
+
 export const colors = {
-  windowBk: "#F5F5F5", // 背景色
-  whiteBk: "#FFFFFF", // 画布背景色
-  gridLine: "#EEEEEE", // 网格线
-  axisLine: "#999999", // 坐标轴线
-  axisText: "#666666", // 坐标轴文字
-  axisLabel: "#333333", // 坐标轴标签
-  axisLabelBk: "#FFFFFF", // 坐标轴标签背景色
-  axisLabelBorder: "#EEEEEE", // 坐标轴标签边框
+  primary: "#007AFF",
+  primaryLight: "grey",
+  windowBk: "#E0E0E1",
+  whiteBk: "white",
+  background: "#F5F5F5",
+  axisLine: "#E0E0E0",
+  axisText: "#999999",
+  card: "#FFFFFF",
+  text: "#333333",
+  border: "#EEEEEE",
+  shadow: "rgba(0, 0, 0, 0.1)",
 };

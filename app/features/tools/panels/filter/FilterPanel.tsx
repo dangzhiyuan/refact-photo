@@ -1,11 +1,12 @@
 import React, { useCallback } from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
-import { useLayerStore } from "../../../store/useLayerStore";
-import { FILTER_PRESETS, LutType } from "../../../types/filter";
-import { FilterPreview } from "../filters/components/FilterPreview";
-import { IntensitySlider } from "../filters/components/IntensitySlider";
-import { ImageLayer } from "../../../types/layer";
-import { filterEngine } from "../filters/FilterEngine";
+import { useLayerStore } from "../../../../store/useLayerStore";
+import { FILTER_PRESETS } from "../../../../types/filter";
+import { FilterPreview } from "../../filters/components/FilterPreview";
+import { IntensitySlider } from "../../filters/components/IntensitySlider";
+import { ImageLayer } from "../../../../types/layer";
+import { filterEngine } from "../../filters/FilterEngine";
+import { LutType } from "../../../../assets/luts";
 
 interface FilterPanelProps {
   onClose: () => void;

@@ -1,11 +1,10 @@
 import React, { FC } from "react";
 import { View, StyleSheet, useWindowDimensions } from "react-native";
-import { FilterPanel } from "./FilterPanel";
-import { AdjustmentPanel } from "./AdjustmentPanel";
-import { TextPanel } from "./TextPanel";
+import { FilterPanel } from "./filter/FilterPanel";
+import { AdjustmentPanel } from "./adjustment/AdjustmentPanel";
+import { TextPanel } from "./text/TextPanel";
 import { LayerPanel } from "../../layers/LayerPanel";
-
-type ToolType = "filter" | "adjustment" | "text" | "layers" | null;
+import { ToolType } from "../../../types/tools";
 
 interface EditorPanelsProps {
   activeTool: ToolType;

@@ -3,38 +3,29 @@ import { View, StyleSheet, SafeAreaView } from "react-native";
 import { CANVAS_AREA } from "../constants/layout";
 import { CanvasView } from "../features/canvas/CanvasView";
 import { Toolbar } from "../features/tools/Toolbar";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { colors } from "../constants/colors";
 
 export const EditorHome: FC = () => {
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {/* 编辑区域 */}
-        <View style={styles.editorArea}>
-          {/* 预览区域 */}
-          <View style={styles.previewArea}>
-            <View style={styles.canvasContainer}>
-              <CanvasView />
-            </View>
-          </View>
-
-          {/* 工具栏区域 */}
-          <View style={styles.toolsArea}>
-            <Toolbar />
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.editorArea}>
+        <View style={styles.previewArea}>
+          <View style={styles.canvasContainer}>
+            <CanvasView />
           </View>
         </View>
-      </SafeAreaView>
-    </GestureHandlerRootView>
+        <View style={styles.toolsArea}>
+          <Toolbar />
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
-  },
   safeArea: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   editorArea: {
     flex: 1,
@@ -43,9 +34,9 @@ const styles = StyleSheet.create({
   previewArea: {
     height: CANVAS_AREA.height,
     width: "100%",
-    backgroundColor: CANVAS_AREA.backgroundColor,
-    borderWidth: CANVAS_AREA.borderWidth,
-    borderColor: CANVAS_AREA.borderColor,
+    backgroundColor: colors.whiteBk,
+    borderWidth: 1,
+    borderColor: colors.border,
     justifyContent: "center",
     alignItems: "center",
   },

@@ -11,8 +11,8 @@ import { colors } from "../../constants/colors";
 import { getCanvasDimensions } from "../../constants/layout";
 import { useLayerStore } from "../../store/useLayerStore";
 import { GuideLines } from "./components/GuideLines";
-import { LayerRenderer } from "./components/LayerRenderer";
-import { useCanvasGestures } from "./hooks/useCanvasGestures";
+import { LayerRenderer } from "./layers/LayerRenderer";
+import { useCanvasGestures } from "../../hooks/canvas/useCanvasGestures";
 
 export const CanvasView: FC = () => {
   const { selectedLayerId, updateLayer } = useLayerStore();
@@ -55,7 +55,7 @@ export const CanvasView: FC = () => {
           },
         ]}
       >
-        {/* 参考线画布 */}
+        {/* 参考线画布,第一个Canvas */}
         <Canvas style={styles.guideCanvas}>
           <GuideLines
             width={dimensions.canvasWidth}

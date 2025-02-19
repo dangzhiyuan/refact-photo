@@ -1,6 +1,7 @@
 import { Gesture } from "react-native-gesture-handler";
 import { useSharedValue } from "react-native-reanimated";
-import { CANVAS_AREA } from "../../../constants/layout";
+import { CANVAS_AREA } from "../../constants/layout";
+import { Transform } from "../../types/layer";
 
 interface UseCanvasGesturesProps {
   enabled: boolean;
