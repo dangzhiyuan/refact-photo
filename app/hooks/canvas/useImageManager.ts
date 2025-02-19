@@ -18,15 +18,10 @@ export const useImageManager = () => {
   // 加载图片为 SkImage
   const loadImage = async (uri: string) => {
     try {
-      // 使用 fetch 获取图片数据
       const response = await fetch(uri);
-      // 直接获取 ArrayBuffer
       const buffer = await response.arrayBuffer();
-      // 转换为 Uint8Array
       const bytes = new Uint8Array(buffer);
-      // 创建 Skia Data
       const skData = Skia.Data.fromBytes(bytes);
-      // 创建 Skia Image
       const image = Skia.Image.MakeImageFromEncoded(skData);
 
       if (!image) {
@@ -67,7 +62,7 @@ export const useImageManager = () => {
     }
   };
 
-  // 从相册选择图片
+
   const pickImage = async () => {
     try {
       setIsLoading(true);
@@ -107,43 +102,43 @@ export const useImageManager = () => {
   };
 
   // 拍照
-  const takePhoto = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  // const takePhoto = async () => {
+  //   try {
+  //     setIsLoading(true);
+  //     setError(null);
 
-      const hasPermission = await requestPermissions();
-      if (!hasPermission) return;
+  //     const hasPermission = await requestPermissions();
+  //     if (!hasPermission) return;
 
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 1,
-      });
+  //     const result = await ImagePicker.launchCameraAsync({
+  //       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  //       allowsEditing: false,
+  //       quality: 1,
+  //     });
 
-      if (result.canceled) {
-        setError({
-          code: "PICKER_CANCELLED",
-          message: "已取消拍照",
-        });
-        return;
-      }
+  //     if (result.canceled) {
+  //       setError({
+  //         code: "PICKER_CANCELLED",
+  //         message: "已取消拍照",
+  //       });
+  //       return;
+  //     }
 
-      if (result.assets[0]) {
-        const skImage = await loadImage(result.assets[0].uri);
-        const layer = await createImageLayer(skImage);
-        addLayer(layer);
-      }
-    } catch (error) {
-      console.error("拍照失败:", error);
-      setError({
-        code: "UNKNOWN_ERROR",
-        message: "拍照失败",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     if (result.assets[0]) {
+  //       const skImage = await loadImage(result.assets[0].uri);
+  //       const layer = await createImageLayer(skImage);
+  //       addLayer(layer);
+  //     }
+  //   } catch (error) {
+  //     console.error("拍照失败:", error);
+  //     setError({
+  //       code: "UNKNOWN_ERROR",
+  //       message: "拍照失败",
+  //     });
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   // 清除错误
   const clearError = () => {
@@ -155,6 +150,5 @@ export const useImageManager = () => {
     error,
     clearError,
     pickImage,
-    takePhoto,
   };
 };

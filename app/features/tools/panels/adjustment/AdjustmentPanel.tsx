@@ -9,6 +9,8 @@ interface AdjustmentPanelProps {
   onClose: () => void;
 }
 
+
+//功能尚未实现
 export const AdjustmentPanel: FC<AdjustmentPanelProps> = ({ onClose }) => {
   const { selectedLayerId, updateLayerAdjustments } = useCanvasStore();
   const [adjustments, setAdjustments] = useState<Adjustments>({

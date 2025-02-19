@@ -58,7 +58,7 @@ export interface ImageLayer extends BaseLayer {
   type: "image";
   imageSource: SkImage;
   filterType: LutType;
-  filterIntensity?: number;
+  filterIntensity: number;
   isUpdatingFilter?: boolean;
   adjustments: Adjustments;
 }

@@ -25,15 +25,11 @@ const tools: ToolItem[] = [
   { type: "layers", icon: "layers", label: "图层" },
 ];
 
-interface EditorPanelsProps {
-  activeTool: ToolType;
-  onClose: () => void;
-}
 
 export const Toolbar = () => {
   const { height: windowHeight } = useWindowDimensions();
   const panelHeight = windowHeight * 0.45;
-  const { pickImage, takePhoto, isLoading } = useImageManager();
+  const { pickImage, isLoading } = useImageManager();
   const [activeTool, setActiveTool] = useState<ToolType>(null);
 
   const handleToolPress = (toolType: ToolType) => {

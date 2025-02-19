@@ -2,7 +2,7 @@ import { Skia } from "@shopify/react-native-skia";
 
 // LUT 查找表着色器
 export const LUT_SHADER = Skia.RuntimeEffect.Make(`
-uniform float intensity;  // 必须放在最前面
+uniform float intensity; 
 uniform shader image;
 uniform shader luts;
 

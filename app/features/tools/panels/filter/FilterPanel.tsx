@@ -7,6 +7,8 @@ import { ImageLayer } from "../../../../types/layer";
 import { filterEngine } from "../../filters/FilterEngine";
 import { LutType } from "../../../../assets/luts";
 import { FILTER_PRESETS } from "../../../../types/filter";
+import { useFilterStore } from '../../../../store/useFilterStore';
+import Slider from "@react-native-community/slider";
 
 interface FilterPanelProps {
   onClose: () => void;
@@ -35,12 +37,15 @@ export const FilterPanel = ({ onClose }: FilterPanelProps) => {
     setDisplayIntensity,
     displayIntensity,
   } = useLayerStore();
+  const { intensity, setIntensity } = useFilterStore();
 
   const selectedLayer = layers.find(
     (layer): layer is ImageLayer =>
       layer.id === selectedLayerId && layer.type === "image"
   );
 
+
+  //缓存滤镜节省性能（有无必要），存在bug，滑动条结束滑动后会一直抖动
   const handleFilterChange = useCallback(
     async (type: LutType) => {
       if (!selectedLayerId) return;
@@ -62,34 +67,23 @@ export const FilterPanel = ({ onClose }: FilterPanelProps) => {
     [selectedLayerId]
   );
 
-  const handleIntensityChange = useCallback(
-    (intensity: number) => {
-      if (!selectedLayerId || !selectedLayer) return;
-      // 只更新显示值，不触发滤镜重新渲染
-      setDisplayIntensity(intensity);
-    },
-    [selectedLayerId, selectedLayer, setDisplayIntensity]
-  );
+  const handleIntensityChange = (value: number) => {
+    // 只更新共享状态，不更新图层
+    setIntensity(value);
+  };
 
-  // 滑动结束后应用滤镜
+  // 滑动结束后才更新图层和应用滤镜
   const handleIntensityComplete = useCallback(
-    async (intensity: number) => {
+    async (value: number) => {
       if (!selectedLayerId || !selectedLayer) return;
 
       try {
         // 清除之前的缓存
         filterEngine.clearFilterCache(selectedLayer.filterType);
-        // 一次性更新
+        
+        // 更新图层
         updateLayer(selectedLayerId, {
-          filterIntensity: intensity,
-          isUpdatingFilter: true, // 避免触发不必要的重渲染
-        });
-
-        // 等待滤镜应用完成
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        updateLayer(selectedLayerId, {
-          isUpdatingFilter: false,
+          filterIntensity: value,
         });
       } catch (error) {
         console.error("Error applying intensity:", error);
@@ -118,11 +112,14 @@ export const FilterPanel = ({ onClose }: FilterPanelProps) => {
       </ScrollView>
 
       {selectedLayer?.filterType !== "normal" && (
-        <IntensitySlider
-          value={selectedLayer.filterIntensity || 1}
-          displayValue={displayIntensity}
-          onChange={handleIntensityChange}
-          onComplete={handleIntensityComplete}
+        <Slider
+          value={intensity}
+          onValueChange={handleIntensityChange}
+          onSlidingComplete={handleIntensityComplete}
+          minimumValue={0}
+          maximumValue={1}
+          step={0.01}
+          style={styles.slider}
         />
       )}
     </View>
@@ -136,5 +133,10 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 8,
+  },
+  slider: {
+    width: '90%',
+    alignSelf: 'center',
+    marginTop: 16,
   },
 });

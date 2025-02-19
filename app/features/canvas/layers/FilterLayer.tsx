@@ -3,6 +3,7 @@ import { Group, Image, Circle } from "@shopify/react-native-skia";
 import { ImageLayer } from "../../../types/layer";
 import { calculateFitSize } from "../../../utils/layoutUtils";
 import { filterEngine } from "../../tools/filters/FilterEngine";
+import { useLayerStore } from "../../../store/useLayerStore";
 
 interface FilterLayerProps {
   layer: ImageLayer;
@@ -16,26 +17,19 @@ const FilterLayerComponent = ({ layer, isSelected }: FilterLayerProps) => {
     opacity,
     isVisible,
     filterType,
-    filterIntensity = 1,
-    isUpdatingFilter,
+    filterIntensity,
   } = layer;
+
+  const { updateLayer } = useLayerStore();
 
   // 存储滤镜处理后的图片
   const [filteredImage, setFilteredImage] = useState(imageSource);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // 使用 useMemo 缓存滤镜参数
-  const filterKey = useMemo(
-    () => `${filterType}_${filterIntensity}`,
-    [filterType, filterIntensity]
-  );
 
   // 当滤镜参数变化时更新图片
   useEffect(() => {
     let isCancelled = false;
 
     const applyFilter = async () => {
-      // 只在真正需要时才加载 LUT
       if (filterType === "normal") {
         setFilteredImage(imageSource);
         return;
@@ -60,7 +54,7 @@ const FilterLayerComponent = ({ layer, isSelected }: FilterLayerProps) => {
     return () => {
       isCancelled = true;
     };
-  }, [filterKey, imageSource]); // 使用 filterKey 代替单独的依赖
+  }, [filterType, filterIntensity, imageSource]);
 
   // 如果图层不可见或没有图片源，返回 null
   if (!isVisible || !imageSource) {

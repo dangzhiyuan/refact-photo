@@ -25,7 +25,6 @@ export const IntensitySlider: React.FC<IntensitySliderProps> = ({
     debounce((value: number) => onComplete(value), 300) // 减少延迟到 300ms
   ).current;
 
-  // 滑动时更新显示值
   const handleValueChange = useCallback(
     (newValue: number) => {
       animatedIntensity.value = withSpring(newValue, {
@@ -38,7 +37,6 @@ export const IntensitySlider: React.FC<IntensitySliderProps> = ({
     [animatedIntensity, onChange]
   );
 
-  // 滑动结束时应用滤镜
   const handleSlidingComplete = useCallback(
     (finalValue: number) => {
       debouncedComplete(finalValue);

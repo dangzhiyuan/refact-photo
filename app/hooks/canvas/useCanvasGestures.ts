@@ -93,7 +93,7 @@ export const useCanvasGestures = ({
   };
 };
 
-// 边界检查函数
+// 边界检查，显示手势范围，未实现
 const boundOffset = (
   offset: { x: number; y: number },
   scale: number
