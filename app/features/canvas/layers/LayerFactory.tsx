@@ -1,8 +1,6 @@
 import React, { FC } from "react";
 import { Layer } from "../../../types/layer";
-import { FilterLayer } from "./FilterLayer";
-import { TextLayer } from "./TextLayer";
-import { DrawLayer } from "./DrawLayer";
+import { useLayerRendererStore } from "../../../store/useLayerRendererStore";
 
 interface LayerFactoryProps {
   layer: Layer;
@@ -10,20 +8,13 @@ interface LayerFactoryProps {
 }
 
 export const LayerFactory: FC<LayerFactoryProps> = ({ layer, isSelected }) => {
-  console.log("LayerFactory rendering:", {
-    layerId: layer.id,
-    type: layer.type,
-    isSelected,
-  });
+  const getRenderer = useLayerRendererStore((state) => state.getRenderer);
+  const Renderer = getRenderer(layer.type);
 
-  switch (layer.type) {
-    case "image":
-      return <FilterLayer layer={layer} isSelected={isSelected} />;
-    case "text":
-      return <TextLayer layer={layer} isSelected={isSelected} />;
-    case "draw":
-      return <DrawLayer layer={layer} isSelected={isSelected} />;
-    default:
-      return null;
+  if (!Renderer) {
+    console.warn(`No renderer found for layer type: ${layer.type}`);
+    return null;
   }
+
+  return <Renderer layer={layer} isSelected={isSelected} />;
 };

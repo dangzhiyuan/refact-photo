@@ -1,7 +1,7 @@
 import React, { FC, useState } from "react";
 import { View, StyleSheet, Text } from "react-native";
 import { PanelHeader } from "../components/PanelHeader";
-import { useCanvasStore } from "../../../../store/useCanvasStore";
+import { useLayerStore } from "../../../../store/useLayerStore";
 import Slider from "@react-native-community/slider";
 import { Adjustments } from "../../../../types/layer";
 
@@ -9,10 +9,9 @@ interface AdjustmentPanelProps {
   onClose: () => void;
 }
 
-
 //功能尚未实现
 export const AdjustmentPanel: FC<AdjustmentPanelProps> = ({ onClose }) => {
-  const { selectedLayerId, updateLayerAdjustments } = useCanvasStore();
+  const { selectedLayerId, updateLayerAdjustments } = useLayerStore();
   const [adjustments, setAdjustments] = useState<Adjustments>({
     brightness: 0,
     contrast: 0,

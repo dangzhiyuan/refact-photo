@@ -77,10 +77,20 @@ class FilterEngine {
     intensity: number,
     lutType: string
   ): Promise<SkImage | null> {
+    console.log("Applying filter:", {
+      sourceImageSize: {
+        width: sourceImage.width(),
+        height: sourceImage.height(),
+      },
+      lutType,
+      intensity,
+    });
     try {
       // 生成缓存键
-      const cacheKey = `${sourceImage.width()}_${sourceImage.height()}_${lutType}_${Math.round(intensity * 100)}`;
-      
+      const cacheKey = `${sourceImage.width()}_${sourceImage.height()}_${lutType}_${Math.round(
+        intensity * 100
+      )}`;
+
       // 检查缓存
       if (this.filterCache.has(cacheKey)) {
         return this.filterCache.get(cacheKey)!;
@@ -96,7 +106,7 @@ class FilterEngine {
       if (lutImage.width() !== 512 || lutImage.height() !== 512) {
         console.error("Invalid LUT dimensions:", {
           width: lutImage.width(),
-          height: lutImage.height()
+          height: lutImage.height(),
         });
         return null;
       }
@@ -112,7 +122,7 @@ class FilterEngine {
 
       // 创建着色器
       const sourceShader = sourceImage.makeShaderOptions(
-        TileMode.Decal,  //避免边缘重复
+        TileMode.Decal, //避免边缘重复
         TileMode.Decal,
         FilterMode.Linear,
         MipmapMode.None
@@ -150,7 +160,7 @@ class FilterEngine {
 
       // 存入缓存
       this.filterCache.set(cacheKey, result);
-      
+
       // 清理过期缓存
       this.cleanupCache();
 
@@ -209,7 +219,7 @@ class FilterEngine {
       console.log("Loading LUT:", {
         type,
         width: asset[0].width,
-        height: asset[0].height
+        height: asset[0].height,
       });
 
       // 从本地 URI 获取图片数据
@@ -225,7 +235,7 @@ class FilterEngine {
       // 再次检查加载后的图片尺寸
       console.log("Loaded LUT dimensions:", {
         width: image.width(),
-        height: image.height()
+        height: image.height(),
       });
 
       return image;
@@ -305,7 +315,9 @@ class FilterEngine {
     intensity: number
   ): Promise<SkImage | null> {
     // 生成缓存键
-    const cacheKey = `${source.width()}_${source.height()}_${type}_${Math.round(intensity * 100)}`;
+    const cacheKey = `${source.width()}_${source.height()}_${type}_${Math.round(
+      intensity * 100
+    )}`;
 
     // 1. 检查结果缓存
     const cachedResult = this.filterCache.get(cacheKey);

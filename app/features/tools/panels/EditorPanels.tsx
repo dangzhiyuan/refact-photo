@@ -4,6 +4,7 @@ import { FilterPanel } from "./filter/FilterPanel";
 import { AdjustmentPanel } from "./adjustment/AdjustmentPanel";
 import { TextPanel } from "./text/TextPanel";
 import { LayerPanel } from "../../layers/LayerPanel";
+import { DrawPanel } from "./draw/DrawPanel";
 import { ToolType } from "../../../types/tools";
 
 interface EditorPanelsProps {
@@ -20,8 +21,10 @@ export const EditorPanels: FC<EditorPanelsProps> = ({
 
   const renderPanel = () => {
     switch (activeTool) {
+      case "draw":
+        return <DrawPanel onClose={onClose} />;
       case "layers":
-        return <LayerPanel />;
+        return <LayerPanel onClose={onClose} />;
       case "filter":
         return <FilterPanel onClose={onClose} />;
       case "adjustment":

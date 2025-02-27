@@ -4,10 +4,12 @@ import { CANVAS_AREA } from "../constants/layout";
 import { CanvasView } from "../features/canvas/CanvasView";
 import { Toolbar } from "../features/tools/Toolbar";
 import { colors } from "../constants/colors";
+import { LayerRendererRegistry } from "../features/canvas/layers";
 
 export const EditorHome: FC = () => {
   return (
     <SafeAreaView style={styles.safeArea}>
+      <LayerRendererRegistry />
       <View style={styles.editorArea}>
         <View style={styles.previewArea}>
           <View style={styles.canvasContainer}>

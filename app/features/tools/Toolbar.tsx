@@ -9,8 +9,7 @@ import {
 import { useImageManager } from "../../hooks";
 import { MaterialIcons } from "@expo/vector-icons";
 import { EditorPanels } from "./panels/EditorPanels";
-
-type ToolType = "filter" | "adjustment" | "text" | "layers" | null;
+import { ToolType } from "../../types/tools";
 
 interface ToolItem {
   type: ToolType;
@@ -19,12 +18,12 @@ interface ToolItem {
 }
 
 const tools: ToolItem[] = [
+  { type: "draw", icon: "brush", label: "涂鸦" },
   { type: "filter", icon: "filter", label: "滤镜" },
   { type: "adjustment", icon: "tune", label: "调整" },
   { type: "text", icon: "text-fields", label: "文字" },
   { type: "layers", icon: "layers", label: "图层" },
 ];
-
 
 export const Toolbar = () => {
   const { height: windowHeight } = useWindowDimensions();

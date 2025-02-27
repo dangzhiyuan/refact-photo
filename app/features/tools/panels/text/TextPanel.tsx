@@ -1,7 +1,7 @@
 import React, { FC, useState } from "react";
 import { View, TextInput, StyleSheet } from "react-native";
 import Slider from "@react-native-community/slider";
-import { useCanvasStore } from "../../../../store/useCanvasStore";
+import { useLayerStore } from "../../../../store/useLayerStore";
 import { ColorPicker } from "./ColorPicker";
 import { PanelHeader } from "../components/PanelHeader";
 
@@ -10,7 +10,7 @@ interface TextPanelProps {
 }
 
 export const TextPanel: FC<TextPanelProps> = ({ onClose }) => {
-  const { selectedLayerId, updateLayer } = useCanvasStore();
+  const { selectedLayerId, updateLayer } = useLayerStore();
   const [text, setText] = useState("");
   const [fontSize, setFontSize] = useState(24);
   const [color, setColor] = useState("#000000");

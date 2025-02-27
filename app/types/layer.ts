@@ -1,30 +1,10 @@
-import { SkImage, Path, SkPath } from "@shopify/react-native-skia";
+import { SkImage, Path, SkPath, BlendMode } from "@shopify/react-native-skia";
 import { LutType } from "../assets/luts";
 
 export type LayerType = "image" | "text" | "draw" | "filter";
-export type BlendMode =
-  | "normal"
-  | "multiply"
-  | "screen"
-  | "overlay"
-  | "darken"
-  | "lighten"
-  | "colorDodge"
-  | "colorBurn"
-  | "hardLight"
-  | "softLight"
-  | "difference"
-  | "exclusion"
-  | "hue"
-  | "saturation"
-  | "color"
-  | "luminosity";
 
 export interface Transform {
-  position: {
-    x: number;
-    y: number;
-  };
+  position: { x: number; y: number };
   scale: number;
   rotation: number;
 }
@@ -51,7 +31,6 @@ export interface BaseLayer {
   blendMode: BlendMode;
   transform: Transform;
   zIndex: number;
-  adjustments?: Adjustments;
 }
 
 export interface ImageLayer extends BaseLayer {
@@ -59,7 +38,6 @@ export interface ImageLayer extends BaseLayer {
   imageSource: SkImage;
   filterType: LutType;
   filterIntensity: number;
-  isUpdatingFilter?: boolean;
   adjustments: Adjustments;
 }
 
@@ -78,10 +56,4 @@ export interface DrawLayer extends BaseLayer {
   strokeWidth: number;
 }
 
-export interface FilterLayer extends BaseLayer {
-  type: "filter";
-  filter: string;
-  intensity: number;
-}
-
-export type Layer = ImageLayer | TextLayer | DrawLayer | FilterLayer;
+export type Layer = ImageLayer | TextLayer | DrawLayer;

@@ -1,4 +1,10 @@
-export type ToolType = "filter" | "adjustment" | "text" | "layers" | null;
+export type ToolType =
+  | "draw"
+  | "filter"
+  | "adjustment"
+  | "text"
+  | "layers"
+  | null;
 
 export interface Tool {
   id: string;

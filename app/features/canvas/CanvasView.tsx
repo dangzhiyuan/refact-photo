@@ -18,7 +18,7 @@ export const CanvasView: FC = () => {
   const { selectedLayerId, updateLayer } = useLayerStore();
 
   const { gesture, scale, offset, isActive } = useCanvasGestures({
-    enabled: !!selectedLayerId, // 只在选中图层时启用手势
+    enabled: !!selectedLayerId,
     onTransformEnd: (transform) => {
       if (selectedLayerId) {
         updateLayer(selectedLayerId, { transform });

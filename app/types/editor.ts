@@ -1,7 +1,7 @@
-export type PanelType = "filter" | "adjust" | "text" | "layer";
+export type PanelType = "draw" | "layers" | "filter" | "adjust" | "text";
 
 export interface EditorState {
   activePanel: PanelType | null;
-  selectedTool: string | null;
+  selectedTool: PanelType | null;
   // ... 其他编辑器状态
 }
