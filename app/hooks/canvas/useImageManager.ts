@@ -38,15 +38,13 @@ export const useImageManager = () => {
   // 请求权限
   const requestPermissions = async () => {
     try {
-      const [imagePermission, libraryPermission] = await Promise.all([
-        ImagePicker.requestCameraPermissionsAsync(),
-        MediaLibrary.requestPermissionsAsync(),
-      ]);
+      const imagePermission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-      if (!imagePermission.granted || !libraryPermission.granted) {
+      if (!imagePermission.granted) {
         setError({
           code: "PERMISSION_DENIED",
-          message: "需要相机和相册访问权限",
+          message: "需要相册访问权限",
         });
         return false;
       }
@@ -56,12 +54,11 @@ export const useImageManager = () => {
       console.error("权限请求失败:", error);
       setError({
         code: "UNKNOWN_ERROR",
-        message: "权限请求失败",
+        message: "权限请求失败，请确保应用有足够的权限。",
       });
       return false;
     }
   };
-
 
   const pickImage = async () => {
     try {
