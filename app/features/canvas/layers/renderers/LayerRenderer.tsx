@@ -1,9 +1,8 @@
 import React, { FC } from "react";
 import { Layer } from "../../../../types/layer";
-import { ImageRenderer } from "./ImageRenderer";
-// 暂时注释掉未创建的渲染器导入
-// import { TextRenderer } from "./TextRenderer";
-// import { DrawRenderer } from "./DrawRenderer";
+import { ImageLayerRenderer } from "./ImageLayerRenderer";
+import { TextLayerRenderer } from "./TextLayerRenderer";
+import { DrawLayerRenderer } from "./DrawLayerRenderer";
 
 interface LayerRendererProps {
   layer: Layer;
@@ -16,14 +15,11 @@ export const LayerRenderer: FC<LayerRendererProps> = ({
 }) => {
   switch (layer.type) {
     case "image":
-      return <ImageRenderer layer={layer} isSelected={isSelected} />;
-    // 暂时返回 null，直到实现对应的渲染器
+      return <ImageLayerRenderer layer={layer} isSelected={isSelected} />;
     case "text":
-      // return <TextRenderer layer={layer} isSelected={isSelected} />;
-      return null;
+      return <TextLayerRenderer layer={layer} isSelected={isSelected} />;
     case "draw":
-      // return <DrawRenderer layer={layer} isSelected={isSelected} />;
-      return null;
+      return <DrawLayerRenderer layer={layer} isSelected={isSelected} />;
     default:
       console.warn(`Unknown layer type: ${(layer as Layer).type}`);
       return null;

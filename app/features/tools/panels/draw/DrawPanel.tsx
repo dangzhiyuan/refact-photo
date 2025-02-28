@@ -27,6 +27,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   content: {
+    backgroundColor: "green",
+    flex: 1,
     padding: 16,
   },
 });

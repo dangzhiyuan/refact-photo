@@ -455,3 +455,172 @@ export const ImageLayerComponent: React.FC<ImageLayerProps> = ({
    - 添加错误边界
    - 优化性能
    - 完善测试
+
+### 六、手势系统方案探索
+
+在图层系统重构过程中，我们遇到了手势系统实现的挑战。主要问题是：在单 Canvas 架构下，如何为不同图层实现独立的手势控制。
+
+1. **方案一：多 Canvas 架构**
+
+   ```typescript
+   // 每个图层使用独立的 Canvas
+   <View>
+     {layers.map(layer => (
+       <GestureDetector key={layer.id} gesture={...}>
+         <Canvas>
+           <LayerRenderer layer={layer} />
+         </Canvas>
+       </GestureDetector>
+     ))}
+   </View>
+   ```
+
+   - 优点：手势控制灵活，每个图层可以有独立的手势
+   - 缺点：性能开销大，多个 Canvas 的管理复杂
+
+2. **方案二：Canvas 级别手势处理**
+
+   - 在 Canvas 层监听所有手势
+   - 根据触摸位置判断当前操作的图层
+   - 通过状态管理分发手势事件
+   - 优点：保持单 Canvas 的性能优势
+   - 缺点：手势判断逻辑复杂
+
+3. **方案三：分层手势处理**
+
+   - 基础手势（缩放、平移）在 Canvas 层处理
+   - 特殊手势（文字编辑、绘画）通过状态切换处理
+   - 优点：逻辑清晰，易于维护
+   - 缺点：可能存在手势冲突
+
+4. **方案四：混合模式（当前选择）**
+   - 普通操作使用单 Canvas
+   - 特殊操作（如绘画）时临时切换到多 Canvas
+   - 优点：
+     - 平衡了性能和功能需求
+     - 特殊操作时可以有更灵活的控制
+   - 缺点：
+     - 需要管理模式切换
+     - 实现相对复杂
+
+### 七、下一步计划
+
+1. **实现混合模式手势系统**
+
+   - [ ] 完善基础手势处理
+   - [ ] 实现特殊操作的模式切换
+   - [ ] 处理手势冲突
+
+2. **性能优化**
+
+   - [ ] 监控 Canvas 切换的性能影响
+   - [ ] 优化渲染效率
+   - [ ] 减少不必要的重渲染
+
+3. **用户体验**
+   - [ ] 确保模式切换的流畅性
+   - [ ] 添加适当的视觉反馈
+   - [ ] 处理边界情况
+
+### 八、单 Canvas 架构的困境
+
+在实现过程中，我们遇到了单 Canvas 架构的瓶颈：
+
+1. **手势系统的限制**
+
+   - GestureDetector 不能嵌套
+   - 无法为单个 Group 添加独立手势
+   - Canvas 级别的手势会影响所有图层
+
+2. **尝试过的解决方案**
+
+   ```typescript
+   // 方案1：在 Group 中嵌套 GestureDetector
+   <Canvas>
+     <Group>
+       <GestureDetector>  // ❌ 不起作用
+         <Circle ... />
+       </GestureDetector>
+     </Group>
+   </Canvas>
+
+   // 方案2：组合手势
+   const combinedGesture = Gesture.Simultaneous(
+     gesture,
+     Gesture.Pan()  // ❌ 导致系统崩溃
+   );
+
+   // 方案3：通过坐标判断
+   const gesture = Gesture.Pan()
+     .onTouchesDown((e) => {
+       const touchedLayer = findLayerAtPoint(x, y);  // ❌ 实现复杂，不可靠
+     });
+   ```
+
+3. **问题总结**
+   - 手势系统与 Skia 的架构冲突
+   - 无法实现真正独立的图层手势
+   - 性能和可维护性难以平衡
+
+### 九、新的架构方案
+
+经过多次尝试，我们决定采用多 Canvas 方案：
+
+1. **分层 Canvas 结构**
+
+   ```typescript
+   <View style={StyleSheet.absoluteFill}>
+     {/* 1. 底层：图片图层 */}
+     <Canvas style={StyleSheet.absoluteFill}>
+       <ImageLayer />
+     </Canvas>
+
+     {/* 2. 中层：涂鸦图层 */}
+     {isDrawMode && (
+       <GestureDetector gesture={drawGesture}>
+         <Canvas style={StyleSheet.absoluteFill}>
+           <DrawLayer />
+         </Canvas>
+       </GestureDetector>
+     )}
+
+     {/* 3. 顶层：装饰图层 */}
+     <GestureDetector gesture={decorationGesture}>
+       <Canvas style={StyleSheet.absoluteFill}>
+         <DecorationLayers />
+       </Canvas>
+     </GestureDetector>
+   </View>
+   ```
+
+2. **新架构的优势**
+
+   - 每个功能模块有独立的 Canvas
+   - 手势处理清晰直观
+   - 更好的性能控制
+   - 更容易维护和扩展
+
+3. **图层管理改进**
+   - 按功能分类管理图层
+   - 每类图层有专门的状态管理
+   - 保持图层概念但简化实现
+
+### 十、下一步计划
+
+1. **重构任务**
+
+   - [ ] 实现基础的多 Canvas 结构
+   - [ ] 迁移现有的图片处理功能
+   - [ ] 实现涂鸦系统
+   - [ ] 添加装饰图层支持
+
+2. **性能优化**
+
+   - [ ] Canvas 按需创建和销毁
+   - [ ] 使用 worklet 优化手势
+   - [ ] 实现图层缓存机制
+
+3. **功能测试**
+   - [ ] 验证各个图层的独立性
+   - [ ] 测试手势系统
+   - [ ] 性能压力测试

@@ -1,4 +1,4 @@
-import { Canvas } from "@shopify/react-native-skia";
+import { Canvas, Group } from "@shopify/react-native-skia";
 import { FC, useMemo, useState, useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";

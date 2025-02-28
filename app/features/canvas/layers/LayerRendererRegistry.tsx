@@ -10,7 +10,6 @@ export const LayerRendererRegistry = () => {
   );
 
   useEffect(() => {
-    // 注册所有渲染器
     registerRenderer("image", ImageLayerRenderer);
     registerRenderer("text", TextLayerRenderer);
     registerRenderer("draw", DrawLayerRenderer);
