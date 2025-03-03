@@ -1,4 +1,6 @@
 import { Layer, ImageLayer, TextLayer } from "../types/layer";
+import { getCanvasDimensions } from "../constants/layout";
+import { calculateFitSize } from "./layoutUtils";
 
 interface Point {
   x: number;
@@ -18,8 +20,6 @@ export const isPointInLayer = (x: number, y: number, layer: Layer): boolean => {
     case "text":
       return isPointInBounds(localPoint, layer as TextLayer);
     case "draw":
-    case "filter":
-      return isPointInBounds(localPoint, layer);
     default:
       return false;
   }
@@ -61,4 +61,41 @@ const transformPoint = (
     x: rx / scale,
     y: ry / scale,
   };
+};
+
+/**
+ * 计算图层尺寸（用于手势处理区域）
+ */
+export const calculateLayerDimensions = (layer: Layer) => {
+  // 根据图层类型计算尺寸
+  switch (layer.type) {
+    case "image":
+      const imageLayer = layer as any;
+      const imageSource = imageLayer.imageSource;
+      if (imageSource) {
+        // 使用与渲染相同的尺寸计算逻辑，但只传递2个参数
+        const fitSize = calculateFitSize(
+          imageSource.width(),
+          imageSource.height()
+        );
+        return {
+          width: fitSize.width,
+          height: fitSize.height,
+        };
+      }
+      return { width: 200, height: 200 };
+
+    case "text":
+      const textLayer = layer as any;
+      // 文字图层尺寸可能需要根据文本内容、字体大小计算
+      return { width: 200, height: 50 };
+
+    case "draw":
+      // 绘图图层尺寸，可能需要根据绘制内容计算
+      return { width: 300, height: 300 };
+
+    default:
+      // 默认尺寸
+      return { width: 200, height: 200 };
+  }
 };

@@ -2,9 +2,9 @@ import React, { FC } from "react";
 import { View, StyleSheet, SafeAreaView } from "react-native";
 import { CANVAS_AREA } from "../constants/layout";
 import { CanvasView } from "../features/canvas/CanvasView";
-import { Toolbar } from "../features/tools/Toolbar";
 import { colors } from "../constants/colors";
 import { LayerRendererRegistry } from "../features/canvas/layers";
+import { EditToolbar } from "../features/tools/Toolbar";
 
 export const EditorHome: FC = () => {
   return (
@@ -17,7 +17,7 @@ export const EditorHome: FC = () => {
           </View>
         </View>
         <View style={styles.toolsArea}>
-          <Toolbar />
+          <EditToolbar />
         </View>
       </View>
     </SafeAreaView>

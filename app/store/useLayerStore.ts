@@ -127,15 +127,56 @@ export const useLayerStore = create<LayerState>((set, get) => ({
       return { layers: newLayers };
     }),
 
-  updateLayer: (id, updates) =>
+  updateLayer: (id, updates) => {
+    console.log(`updateLayer called for ${id}`, updates);
     set((state) => {
-      const newLayers = new Map(state.layers);
-      const layer = newLayers.get(id);
-      if (layer) {
-        newLayers.set(id, { ...layer, ...updates } as Layer);
+      const layer = state.layers.get(id);
+      if (!layer) return state;
+
+      // 根据图层类型精确处理更新
+      let updatedLayer: Layer;
+
+      if (layer.type === "image") {
+        updatedLayer = {
+          ...layer,
+          ...updates,
+          type: "image", // 确保类型不变
+          transform: {
+            ...layer.transform,
+            ...(updates.transform || {}),
+          },
+        } as ImageLayer;
+      } else if (layer.type === "text") {
+        updatedLayer = {
+          ...layer,
+          ...updates,
+          type: "text", // 确保类型不变
+          transform: {
+            ...layer.transform,
+            ...(updates.transform || {}),
+          },
+        } as TextLayer;
+      } else {
+        // 其他类型图层
+        updatedLayer = {
+          ...layer,
+          ...updates,
+          transform: {
+            ...layer.transform,
+            ...(updates.transform || {}),
+          },
+        } as Layer;
       }
+
+      console.log("Layer after update:", updatedLayer);
+
+      // 创建新的 Map 以触发重新渲染
+      const newLayers = new Map(state.layers);
+      newLayers.set(id, updatedLayer);
+
       return { layers: newLayers };
-    }),
+    });
+  },
 
   selectLayer: (id) => set((state) => ({ selectedLayerId: id })),
 

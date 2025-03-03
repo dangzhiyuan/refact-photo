@@ -1,16 +1,17 @@
 import React, { FC, useState, useEffect } from "react";
-import { Group, Image } from "@shopify/react-native-skia";
+import { Image } from "@shopify/react-native-skia";
 import { LayerRendererProps } from "../../../../types/renderer";
 import { ImageLayer } from "../../../../types/layer";
 import { calculateFitSize } from "../../../../utils/layoutUtils";
 import { filterEngine } from "../../../tools/filters/FilterEngine";
+import { BaseRenderer } from "./BaseRenderer";
 
 export const ImageLayerRenderer: FC<LayerRendererProps> = ({
   layer,
   isSelected,
 }) => {
   const imageLayer = layer as ImageLayer;
-  const { imageSource, transform, opacity, filterType } = imageLayer;
+  const { imageSource, filterType } = imageLayer;
   const [processedImage, setProcessedImage] = useState(imageSource);
 
   useEffect(() => {
@@ -35,21 +36,13 @@ export const ImageLayerRenderer: FC<LayerRendererProps> = ({
   const fitSize = calculateFitSize(imageSource.width(), imageSource.height());
 
   return (
-    <Group
-      transform={[
-        { translateX: transform.position.x },
-        { translateY: transform.position.y },
-        { scale: transform.scale },
-        { rotate: transform.rotation },
-      ]}
-      opacity={opacity}
-    >
+    <BaseRenderer layer={layer} isSelected={isSelected}>
       <Image
         image={processedImage}
         width={fitSize.width}
         height={fitSize.height}
         fit="contain"
       />
-    </Group>
+    </BaseRenderer>
   );
 };

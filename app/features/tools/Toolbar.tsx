@@ -25,7 +25,7 @@ const tools: ToolItem[] = [
   { type: "layers", icon: "layers", label: "图层" },
 ];
 
-export const Toolbar = () => {
+export const EditToolbar = () => {
   const { height: windowHeight } = useWindowDimensions();
   const panelHeight = windowHeight * 0.45;
   const { pickImage, isLoading } = useImageManager();

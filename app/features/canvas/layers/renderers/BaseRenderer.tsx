@@ -1,8 +1,8 @@
 import React, { FC } from "react";
 import { Group } from "@shopify/react-native-skia";
 import { LayerRendererProps } from "../../../../types/renderer";
-import { SelectionBox } from "../components/SelectionBox";
 
+// 简化为纯渲染组件，移除任何手势和选择逻辑
 export const BaseRenderer: FC<LayerRendererProps> = ({
   layer,
   isSelected,
@@ -19,7 +19,7 @@ export const BaseRenderer: FC<LayerRendererProps> = ({
       opacity={layer.opacity}
     >
       {children}
-      {isSelected && <SelectionBox layer={layer} />}
+      {/* 移除选择框逻辑，由单独的选择指示器处理 */}
     </Group>
   );
 };
