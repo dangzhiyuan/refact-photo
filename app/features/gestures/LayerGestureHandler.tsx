@@ -9,6 +9,10 @@ import Animated, {
 import { Layer } from "../../types/layer";
 import { useLayerStore } from "../../store/useLayerStore";
 import { calculateLayerDimensions } from "../../utils/layerUtils";
+import {
+  tempUpdateLayerPosition,
+  markLayerAsDragging,
+} from "../../store/useTempPositionStore";
 
 interface LayerGestureHandlerProps {
   layer: Layer;
@@ -35,25 +39,40 @@ export const LayerGestureHandler: FC<LayerGestureHandlerProps> = ({
     .onStart(() => {
       console.log(`LAYER ${layer.id} PAN STARTED`);
       runOnJS(selectLayer)(layer.id);
+      // 标记图层开始拖动
+      runOnJS(markLayerAsDragging)(layer.id, true);
     })
     .onChange((e) => {
       // 更新动画值
       translateX.value += e.changeX;
       translateY.value += e.changeY;
+
+      // 恢复使用原始更新函数
+      runOnJS(tempUpdateLayerPosition)(
+        layer.id,
+        translateX.value,
+        translateY.value
+      );
     })
     .onEnd(() => {
       console.log(`LAYER ${layer.id} PAN ENDED`);
 
-      // 拖动结束后更新图层状态
+      // 获取当前的临时位置值
+      const finalPosition = {
+        x: translateX.value,
+        y: translateY.value,
+      };
+
+      // 首先更新图层的实际位置（不会立即触发渲染）
       runOnJS(updateLayer)(layer.id, {
         transform: {
           ...layer.transform,
-          position: {
-            x: translateX.value,
-            y: translateY.value,
-          },
+          position: finalPosition,
         },
       });
+
+      // 然后再标记图层结束拖动（确保位置已更新）
+      runOnJS(markLayerAsDragging)(layer.id, false);
     });
 
   // 创建动画样式
@@ -70,9 +89,9 @@ export const LayerGestureHandler: FC<LayerGestureHandlerProps> = ({
 
   return (
     <GestureDetector gesture={panGesture}>
-      <Animated.View style={[styles.gestureArea, animatedStyle]}>
-        <Text style={styles.layerLabel}>{layer.id.substring(0, 4)}</Text>
-      </Animated.View>
+      <Animated.View
+        style={[styles.gestureArea, animatedStyle]}
+      ></Animated.View>
     </GestureDetector>
   );
 };
@@ -80,8 +99,6 @@ export const LayerGestureHandler: FC<LayerGestureHandlerProps> = ({
 const styles = StyleSheet.create({
   gestureArea: {
     backgroundColor: "transparent",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.7)",
     position: "absolute",
   },
   layerLabel: {

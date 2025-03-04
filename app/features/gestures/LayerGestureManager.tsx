@@ -4,18 +4,24 @@ import { useLayerStore } from "../../store/useLayerStore";
 import { LayerGestureHandler } from "./LayerGestureHandler";
 
 export const LayerGestureManager: FC = () => {
-  // 使用useMemo减少重复计算
-  const layers = useMemo(() => {
-    const allLayers = useLayerStore.getState().layers;
-    console.log("LayerGestureManager: Found", allLayers.size, "layers");
-    return Array.from(allLayers.values()).sort((a, b) => b.zIndex - a.zIndex);
-  }, [useLayerStore.getState().layers]);
+  // 正确订阅 layers 状态
+  const layers = useLayerStore((state) => state.layers);
 
-  console.log("LayerGestureManager rendering with", layers.length, "layers");
+  // 基于最新的 layers 状态计算层级排序
+  const layersArray = useMemo(() => {
+    console.log("LayerGestureManager: Found", layers.size, "layers");
+    return Array.from(layers.values()).sort((a, b) => b.zIndex - a.zIndex);
+  }, [layers]);
+
+  console.log(
+    "LayerGestureManager rendering with",
+    layersArray.length,
+    "layers"
+  );
 
   return (
     <View style={styles.container} pointerEvents="box-none">
-      {layers.map((layer) => {
+      {layersArray.map((layer) => {
         console.log(`Creating gesture handler for layer ${layer.id}`);
         return <LayerGestureHandler key={layer.id} layer={layer} />;
       })}
@@ -26,8 +32,8 @@ export const LayerGestureManager: FC = () => {
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 1500, // 确保在大多数元素上面，但在测试框下面
-    backgroundColor: "rgba(0,0,255,0.1)",
-    pointerEvents: "box-none", // 确保事件可以穿透到非手势区域
+    zIndex: 1500,
+    backgroundColor: "transparent",
+    pointerEvents: "box-none",
   },
 });

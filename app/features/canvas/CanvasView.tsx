@@ -13,12 +13,12 @@ import { useLayerStore } from "../../store/useLayerStore";
 import { GuideLines } from "./components/GuideLines";
 import { LayerRenderer } from "./layers/LayerRenderer";
 import { LayerGestureManager } from "../../features/gestures/LayerGestureManager";
-import { SelectionIndicator } from "./components/SelectionIndicator";
 import { DrawGestureHandler } from "../../features/gestures/DrawGestureHandler";
 import { useDrawModeStore } from "../../store/useDrawModeStore";
 import { TestBox } from "../../features/gestures/TestBox";
 import { useRealTimeStore } from "../../store/useRealTimeStore";
 import { ErrorBoundary } from "../../components/ErrorBoundary";
+import { SelectionIndicator } from "./components/SelectionIndicator";
 
 export const CanvasView: FC = () => {
   const { selectedLayerId } = useLayerStore();
@@ -62,7 +62,7 @@ export const CanvasView: FC = () => {
           </ErrorBoundary>
         </View>
 
-        {/* 3. 新增：手势处理层 - 交互层 */}
+        {/* 3. 手势处理层 - 交互层 */}
         {!isDrawMode && (
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <LayerGestureManager />
@@ -74,7 +74,7 @@ export const CanvasView: FC = () => {
 
         {/* 参考线画布 - 顶层 */}
         <View style={styles.guideContainer} pointerEvents="none">
-          {!isDrawMode && <SelectionIndicator />}
+          {/* {!isDrawMode && <SelectionIndicator />} */}
           <Canvas style={styles.guideCanvas}>
             <GuideLines
               width={dimensions.canvasWidth}
@@ -87,29 +87,7 @@ export const CanvasView: FC = () => {
         </View>
 
         {/* 添加测试框在最顶层 */}
-        <TestBox />
-
-        {/* 添加实时模式按钮 */}
-        <TouchableOpacity
-          style={[
-            styles.realTimeModeButton,
-            isRealTimeMode
-              ? styles.realTimeModeActive
-              : styles.realTimeModeInactive,
-          ]}
-          onPress={toggleRealTimeMode}
-        >
-          <Text
-            style={[
-              styles.realTimeModeButtonText,
-              isRealTimeMode
-                ? styles.realTimeModeTextActive
-                : styles.realTimeModeTextInactive,
-            ]}
-          >
-            {isRealTimeMode ? "RT" : "ST"}
-          </Text>
-        </TouchableOpacity>
+        {/* <TestBox /> */}
       </View>
     </View>
   );

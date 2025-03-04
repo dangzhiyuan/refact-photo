@@ -2,12 +2,13 @@ import React, { FC } from "react";
 import { Group } from "@shopify/react-native-skia";
 import { LayerRendererProps } from "../../../../types/renderer";
 
-// 简化为纯渲染组件，移除任何手势和选择逻辑
+// 简化为纯渲染组件，确保使用正确的变换属性
 export const BaseRenderer: FC<LayerRendererProps> = ({
   layer,
   isSelected,
   children,
 }) => {
+  // 注意：这里使用的 layer.transform 可能已经包含临时位置
   return (
     <Group
       transform={[

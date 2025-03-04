@@ -43,33 +43,27 @@ export const useTempPositionStore = create<TempPositionStore>((set, get) => ({
   finishDragging: (id: string) => {
     try {
       set((state) => {
-        // 防御性编程：确保 id 存在
-        if (!id) {
-          console.warn("Attempted to finish dragging with null/undefined id");
-          return state; // 不更改状态
-        }
+        const newDraggingLayers = new Set(state.draggingLayers);
+        newDraggingLayers.delete(id);
 
-        // 创建新的拖动集合，排除当前图层
-        const newDraggingLayers = new Set(
-          Array.from(state.draggingLayers).filter((layerId) => layerId !== id)
-        );
-
-        // 创建新的位置对象，移除当前图层的临时位置
-        const newPositions = { ...state.positions };
-        if (id in newPositions) {
-          delete newPositions[id];
-        }
-
-        console.log(
-          `Finishing drag for ${id}, dragging layers will be:`,
-          Array.from(newDraggingLayers)
-        );
+        // 重要：不要立即删除临时位置，让它保持到下一次渲染
+        // 当永久位置更新后，两者应该是相同的，所以不会有视觉跳跃
+        // 可以在下一帧或短暂延迟后清除临时位置
 
         return {
           draggingLayers: newDraggingLayers,
-          positions: newPositions,
+          // 不要删除 positions[id]
         };
       });
+
+      // 延迟清除临时位置，确保主状态已经更新
+      setTimeout(() => {
+        set((state) => {
+          const newPositions = { ...state.positions };
+          delete newPositions[id];
+          return { positions: newPositions };
+        });
+      }, 50); // 短暂延迟，足够让渲染完成
     } catch (error) {
       console.error("Error in finishDragging:", error);
     }

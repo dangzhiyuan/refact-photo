@@ -35,10 +35,15 @@ export interface BaseLayer {
 
 export interface ImageLayer extends BaseLayer {
   type: "image";
-  imageSource: SkImage;
+  imageSource: any;
   filterType: LutType;
   filterIntensity: number;
-  adjustments: Adjustments;
+  adjustments: {
+    brightness: number;
+    contrast: number;
+    saturation: number;
+  };
+  name: string;
 }
 
 export interface TextLayer extends BaseLayer {
