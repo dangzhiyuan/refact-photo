@@ -17,7 +17,7 @@ export const LayerFactory: FC<LayerFactoryProps> = ({ layer, isSelected }) => {
       type: layer.type,
       isSelected,
       position: layer.position,
-      scale: layer.scale
+      scale: layer.scale,
     });
 
     switch (layer.type) {
