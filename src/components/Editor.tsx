@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Dimensions,
 } from "react-native";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { CanvasManager } from "./CanvasManager";
@@ -15,40 +16,55 @@ import { TextPanel } from "./panels/TextPanel";
 import { AdjustmentPanel } from "./panels/AdjustmentPanel";
 import { useEditorStore } from "../store/editorStore";
 import { EditorMode } from "../core/types/canvas";
+import { Toolbar } from "./Toolbar";
+import { LayerPanel } from "./panels/LayerPanel";
+import { ToolType } from "./Toolbar";
+import { useNavigation } from "@react-navigation/native";
+import { CanvasViewport } from "./canvas/CanvasViewport";
+import { COLORS } from "../theme/colors";
+import { useLayerVisibility } from "../hooks/useLayerVisibility";
+
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export const Editor: React.FC = () => {
-  // 使用 useCallback 包装从 store 获取的函数，避免重新创建函数
   const currentMode = useEditorStore((state) => state.currentMode);
   const setMode = useEditorStore((state) => state.setMode);
 
-  // 本地状态
   const [intensityVisible, setIntensityVisible] = useState(false);
-  // 添加面板可见性状态
   const [isPanelVisible, setIsPanelVisible] = useState(true);
+  const [activeCanvas, setActiveCanvas] = useState("base");
+  const [activeTool, setActiveTool] = useState<ToolType>(EditorMode.EDIT);
+  const navigation = useNavigation();
+  const { visibleLayers, toggleLayerVisibility } = useLayerVisibility();
+  const [imageDimensions, setImageDimensions] = useState({
+    width: SCREEN_WIDTH - 40,
+    height: SCREEN_HEIGHT - 40,
+  });
 
-  // 使用 useCallback 优化事件处理函数
-  const handleClose = useCallback(() => {
-    console.log("关闭编辑器");
-    // 添加导航逻辑
+  const handleCanvasSizeChange = useCallback((size) => {
+    console.log("Canvas size changed:", size);
+    if (size.width > 0 && size.height > 0) {
+      setImageDimensions(size);
+    }
   }, []);
+
+  const handleClose = useCallback(() => {
+    navigation.goBack();
+  }, [navigation]);
 
   const handleSave = useCallback(() => {
     console.log("保存图片");
-    // 导出图片逻辑
   }, []);
 
   const handleIntensityToggle = useCallback(() => {
     setIntensityVisible((prev) => !prev);
   }, []);
 
-  // 修改模式切换函数，添加面板切换逻辑
   const handleModeChange = useCallback(
     (mode: EditorMode) => {
       if (mode === currentMode) {
-        // 如果点击的是当前已选中的模式，切换面板可见性
         setIsPanelVisible(!isPanelVisible);
       } else {
-        // 如果点击的是不同的模式，切换模式并显示面板
         setMode(mode);
         setIsPanelVisible(true);
       }
@@ -56,11 +72,33 @@ export const Editor: React.FC = () => {
     [currentMode, isPanelVisible, setMode]
   );
 
-  // 渲染当前工具面板 - 使用 useCallback 避免重新创建
+  const handleToolChange = useCallback(
+    (tool: ToolType) => {
+      if (tool === activeTool) {
+        setIsPanelVisible(!isPanelVisible);
+      } else {
+        setActiveTool(tool);
+        setIsPanelVisible(true);
+      }
+    },
+    [activeTool, isPanelVisible]
+  );
   const renderToolPanel = useCallback(() => {
-    // 如果面板不可见，返回null
     if (!isPanelVisible) return null;
-
+    const handlePanelClose = () => {
+      setIsPanelVisible(false);
+    };
+    if (activeTool === "layer") {
+      return (
+        <LayerPanel
+          activeCanvas={activeCanvas}
+          onCanvasChange={setActiveCanvas}
+          onClose={handlePanelClose}
+          visibleLayers={visibleLayers}
+          onToggleVisibility={toggleLayerVisibility}
+        />
+      );
+    }
     switch (currentMode) {
       case EditorMode.FILTER:
         return <FilterPanel onIntensityToggle={handleIntensityToggle} />;
@@ -73,83 +111,72 @@ export const Editor: React.FC = () => {
       default:
         return null;
     }
-  }, [currentMode, handleIntensityToggle, isPanelVisible]);
+  }, [
+    currentMode,
+    handleIntensityToggle,
+    isPanelVisible,
+    activeTool,
+    activeCanvas,
+    visibleLayers,
+    toggleLayerVisibility,
+  ]);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 顶部导航栏 */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={handleClose}>
-          <Ionicons name="close" size={24} color="#FFF" />
+          <Ionicons name="close" size={24} color={COLORS.text.primary} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.headerButton} onPress={handleSave}>
-          <Ionicons name="checkmark" size={24} color="#FFF" />
+          <Ionicons name="checkmark" size={24} color={COLORS.text.primary} />
         </TouchableOpacity>
       </View>
 
-      {/* 主要内容区域 */}
-      <View style={styles.canvasContainer}>
-        <CanvasManager />
+      <View
+        style={{
+          alignSelf: "center",
+          alignItems: "center",
+          justifyContent: "center",
+          width: imageDimensions.width,
+          height: imageDimensions.height,
+          // 添加边框可以检查容器是否与图片尺寸匹配（调试用）
+          // borderWidth: 1,
+          // borderColor: 'red',
+        }}
+      >
+        <CanvasViewport
+          activeCanvas={activeCanvas}
+          setActiveCanvas={setActiveCanvas}
+          backgroundColor={COLORS.canvasBackground}
+          borderRadius={15}
+          useGradient={true}
+          paddingHorizontal={0}
+          paddingVertical={0}
+          initialScale={0.8}
+          fitScale={0.85}
+          borderStyle="corners"
+          shadowProps={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
+          }}
+          visibleLayers={visibleLayers}
+          onCanvasSizeChange={handleCanvasSizeChange}
+        />
       </View>
 
-      {/* 强度滑块区域 */}
-      {intensityVisible && (
-        <View style={styles.intensityContainer}>
-          <View style={styles.intensitySlider}>
-            <Text style={styles.intensityValue}>94</Text>
-          </View>
-        </View>
-      )}
-
-      {/* 工具面板 */}
-      {renderToolPanel()}
-
-      {/* 底部工具栏 */}
-      <View style={styles.toolbar}>
-        <TouchableOpacity
-          style={[
-            styles.toolButton,
-            currentMode === EditorMode.EDIT && styles.activeToolButton,
-          ]}
-          onPress={() => handleModeChange(EditorMode.EDIT)}
-        >
-          <MaterialIcons name="tune" size={24} color="#FFF" />
-          <Text style={styles.toolText}>调整</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.toolButton,
-            currentMode === EditorMode.FILTER && styles.activeToolButton,
-          ]}
-          onPress={() => handleModeChange(EditorMode.FILTER)}
-        >
-          <MaterialIcons name="auto-fix-high" size={24} color="#FFF" />
-          <Text style={styles.toolText}>滤镜</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.toolButton,
-            currentMode === EditorMode.TEXT && styles.activeToolButton,
-          ]}
-          onPress={() => handleModeChange(EditorMode.TEXT)}
-        >
-          <MaterialIcons name="title" size={24} color="#FFF" />
-          <Text style={styles.toolText}>文字</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.toolButton,
-            currentMode === EditorMode.DRAW && styles.activeToolButton,
-          ]}
-          onPress={() => handleModeChange(EditorMode.DRAW)}
-        >
-          <MaterialIcons name="brush" size={24} color="#FFF" />
-          <Text style={styles.toolText}>绘画</Text>
-        </TouchableOpacity>
+      <View style={[styles.toolsSection, { flex: 1 }]}>
+        <Toolbar
+          activeCanvas={activeCanvas}
+          onCanvasChange={setActiveCanvas}
+          currentMode={currentMode}
+          onModeChange={setMode}
+          activeTool={activeTool}
+          onToolChange={handleToolChange}
+        />
+        <View style={styles.panelContainer}>{renderToolPanel()}</View>
       </View>
     </SafeAreaView>
   );
@@ -158,21 +185,45 @@ export const Editor: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
   },
   headerButton: {
     padding: 8,
   },
-  canvasContainer: {
+  toolsSection: {
+    flexDirection: "column",
+    backgroundColor: COLORS.panelBackground,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    marginTop: 5,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: COLORS.border,
+    // 添加阴影效果
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  panelContainer: {
     flex: 1,
   },
   intensityContainer: {
+    position: "absolute",
+    bottom: 10,
+    left: 0,
+    right: 0,
     height: 50,
     paddingHorizontal: 20,
     alignItems: "center",

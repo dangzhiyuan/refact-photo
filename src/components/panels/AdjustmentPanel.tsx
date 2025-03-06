@@ -8,8 +8,16 @@ import {
 } from "react-native";
 import Slider from "@react-native-community/slider";
 import { useEditorStore } from "../../store/editorStore";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS } from "../../theme/colors";
 
-export const AdjustmentPanel: React.FC = () => {
+interface AdjustmentPanelProps {
+  onClose?: () => void;
+}
+
+export const AdjustmentPanel: React.FC<AdjustmentPanelProps> = ({
+  onClose,
+}) => {
   const { adjustments, updateAdjustments } = useEditorStore();
 
   const adjustmentOptions = [
@@ -56,7 +64,19 @@ export const AdjustmentPanel: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView>
+      <View style={styles.header}>
+        <Text style={styles.title}>调整</Text>
+        {onClose && (
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Ionicons
+              name="close-outline"
+              size={24}
+              color={COLORS.text.primary}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {adjustmentOptions.map((option) => (
           <View key={option.id} style={styles.adjustmentRow}>
             <Text style={styles.adjustmentLabel}>{option.name}</Text>
@@ -65,9 +85,9 @@ export const AdjustmentPanel: React.FC = () => {
               minimumValue={option.min}
               maximumValue={option.max}
               value={option.value}
-              minimumTrackTintColor="#FFC0CB" // 淡粉色
-              maximumTrackTintColor="#444"
-              thumbTintColor="#FFF"
+              minimumTrackTintColor={COLORS.accent}
+              maximumTrackTintColor={COLORS.border}
+              thumbTintColor={COLORS.accent}
               onValueChange={(value) => handleSliderChange(option.id, value)}
             />
             <Text style={styles.adjustmentValue}>
@@ -86,11 +106,33 @@ export const AdjustmentPanel: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: 300,
+    flex: 1,
+    backgroundColor: COLORS.panelBackground,
+    borderRadius: 12,
+    margin: 8,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.text.primary,
+  },
+  content: {
+    flex: 1,
   },
   adjustmentRow: {
     flexDirection: "row",
@@ -98,7 +140,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   adjustmentLabel: {
-    color: "#FFFFFF",
+    color: COLORS.text.secondary,
     width: 80,
   },
   slider: {
@@ -107,19 +149,26 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   adjustmentValue: {
-    color: "#FFFFFF",
+    color: COLORS.text.primary,
     width: 40,
     textAlign: "right",
   },
   resetButton: {
-    alignSelf: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 30,
-    backgroundColor: "rgba(100, 100, 100, 0.5)",
-    borderRadius: 20,
-    marginTop: 10,
+    backgroundColor: COLORS.accent,
+    borderRadius: 24,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 20,
   },
   resetText: {
     color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  closeButton: {
+    padding: 4,
   },
 });

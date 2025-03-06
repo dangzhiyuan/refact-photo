@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,124 +8,131 @@ import {
   Image,
 } from "react-native";
 import { useEditorStore } from "../../store/editorStore";
+import { COLORS } from "../../theme/colors";
+import { Ionicons } from "@expo/vector-icons";
 
 interface FilterPanelProps {
   onIntensityToggle: () => void;
+  onClose?: () => void;
 }
 
 export const FilterPanel: React.FC<FilterPanelProps> = ({
   onIntensityToggle,
+  onClose,
 }) => {
-  const { currentFilter, setFilter } = useEditorStore();
+  const currentFilter = useEditorStore((state) => state.currentFilter);
+  const setFilter = useEditorStore((state) => state.setFilter);
+  const baseImageUri = useEditorStore((state) => state.baseImageUri);
+  const [activeCategory, setActiveCategory] = useState("推荐");
 
-  // 滤镜类别
-  const categories = [
-    { id: "all", name: "全部" },
-    { id: "popular", name: "热门", active: true },
-    { id: "vintage", name: "古早" },
-    { id: "film", name: "胶卷" },
-    { id: "mono", name: "黑白" },
+  const categories = ["推荐", "基础", "创意", "黑白", "复古"];
+
+  const defaultImageSource = require("../../../assets/icon.png");
+
+  const imageSource = baseImageUri ? { uri: baseImageUri } : defaultImageSource;
+
+  const filters = [
+    { id: "normal", name: "原图", icon: null },
+    { id: "lut1", name: "清新", icon: null },
+    { id: "lut2", name: "明亮", icon: null },
+    { id: "lut3", name: "电影", icon: "lock" },
+    { id: "lut4", name: "复古", icon: null },
+    { id: "lut5", name: "低饱和", icon: null },
   ];
 
-  // 滤镜列表
-  // const filters = [
-  //   {
-  //     id: "normal",
-  //     name: "原图",
-  //     preview: require("../../assets/filters/normal.png"),
-  //   },
-  //   {
-  //     id: "light",
-  //     name: "轻柔",
-  //     preview: require("../../assets/filters/light.png"),
-  //   },
-  //   {
-  //     id: "soft",
-  //     name: "初色",
-  //     preview: require("../../assets/filters/soft.png"),
-  //   },
-  //   {
-  //     id: "flow",
-  //     name: "流云",
-  //     preview: require("../../assets/filters/flow.png"),
-  //     locked: true,
-  //   },
-  //   {
-  //     id: "cool",
-  //     name: "反差冷",
-  //     preview: require("../../assets/filters/cool.png"),
-  //   },
-  //   {
-  //     id: "warm",
-  //     name: "富士",
-  //     preview: require("../../assets/filters/warm.png"),
-  //   },
-  //   {
-  //     id: "lowkey",
-  //     name: "低饱和",
-  //     preview: require("../../assets/filters/lowkey.png"),
-  //   },
-  // ];
+  const handleFilterSelect = (filterId: string) => {
+    setFilter(filterId);
+  };
 
   return (
     <View style={styles.container}>
-      {/* 分类标签 */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesContainer}
-      >
-        {categories.map((category) => (
-          <TouchableOpacity
-            key={category.id}
-            style={[
-              styles.categoryTab,
-              category.active && styles.activeCategoryTab,
-            ]}
-          >
-            <Text
-              style={[
-                styles.categoryText,
-                category.active && styles.activeCategoryText,
-              ]}
-            >
-              {category.name}
-            </Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>滤镜</Text>
+        {onClose && (
+          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+            <Ionicons
+              name="close-outline"
+              size={24}
+              color={COLORS.text.primary}
+            />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        )}
+      </View>
 
-      {/* 滤镜列表 */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filtersContainer}
-      >
-        {/* {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter.id}
-            style={styles.filterItem}
-            onPress={() => {
-              setFilter(filter.id);
-              onIntensityToggle();
-            }}
-          >
-            <View
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* 分类选项卡 */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoriesContainer}
+        >
+          {categories.map((category) => (
+            <TouchableOpacity
+              key={category}
               style={[
-                styles.filterPreview,
-                currentFilter === filter.id && styles.activeFilterPreview,
+                styles.categoryTab,
+                activeCategory === category && styles.activeCategoryTab,
               ]}
+              onPress={() => setActiveCategory(category)}
             >
-              <Image source={filter.preview} style={styles.filterImage} />
-              {filter.locked && (
-                <View style={styles.lockOverlay}>
-                  <Text style={styles.lockIcon}>🔒</Text>
-                </View>
-              )}
-            </View>
-            <Text style={styles.filterName}>{filter.name}</Text>
-          </TouchableOpacity>
-        ))} */}
+              <Text
+                style={[
+                  styles.categoryText,
+                  activeCategory === category && styles.activeCategoryText,
+                ]}
+              >
+                {category}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* 滤镜选项 */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filtersContainer}
+        >
+          {filters.map((filter) => (
+            <TouchableOpacity
+              key={filter.id}
+              style={styles.filterOption}
+              onPress={() => handleFilterSelect(filter.id)}
+            >
+              <View
+                style={[
+                  styles.filterImageContainer,
+                  currentFilter === filter.id &&
+                    styles.selectedFilterImageContainer,
+                ]}
+              >
+                <Image
+                  source={imageSource}
+                  style={styles.filterImage}
+                  resizeMode="cover"
+                />
+                {filter.icon && (
+                  <View style={styles.lockOverlay}>
+                    <Ionicons
+                      name="lock-closed"
+                      size={20}
+                      color="white"
+                      style={styles.lockIcon}
+                    />
+                  </View>
+                )}
+              </View>
+              <Text
+                style={[
+                  styles.filterName,
+                  currentFilter === filter.id && styles.selectedFilterName,
+                ]}
+              >
+                {filter.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </ScrollView>
     </View>
   );
@@ -133,59 +140,94 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: 10,
+    flex: 1,
+    backgroundColor: COLORS.panelBackground,
+    borderRadius: 12,
+    margin: 8,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.divider,
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.text.primary,
+  },
+  content: {
+    flex: 1,
+  },
+  closeButton: {
+    padding: 4,
   },
   categoriesContainer: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    marginBottom: 16,
   },
   categoryTab: {
     paddingHorizontal: 20,
     paddingVertical: 8,
-    marginRight: 8,
+    marginRight: 10,
     borderRadius: 20,
-    backgroundColor: "rgba(50, 50, 50, 0.5)",
+    backgroundColor: COLORS.canvasBackground,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   activeCategoryTab: {
-    backgroundColor: "rgba(255, 192, 203, 0.7)", // 淡粉色背景，匹配参考图
+    backgroundColor: COLORS.accent + "15", // 使用与TextPanel一致的透明背景
+    borderColor: COLORS.accent,
   },
   categoryText: {
-    color: "#fff",
+    color: COLORS.text.secondary,
     fontSize: 14,
   },
   activeCategoryText: {
-    fontWeight: "bold",
+    color: COLORS.accent, // 使用强调色
+    fontWeight: "500", // 与TextPanel一致的字重
   },
   filtersContainer: {
-    paddingHorizontal: 15,
-    paddingVertical: 5,
+    marginBottom: 16,
   },
-  filterItem: {
+  filterOption: {
     alignItems: "center",
-    marginRight: 15,
-    width: 70,
+    marginRight: 16,
+    width: 80,
   },
-  filterPreview: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "#555",
-    marginBottom: 8,
+  filterImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 8,
     overflow: "hidden",
+    marginBottom: 8,
     borderWidth: 2,
     borderColor: "transparent",
   },
-  activeFilterPreview: {
-    borderColor: "#fff",
+  selectedFilterImageContainer: {
+    borderColor: COLORS.accent,
+    backgroundColor: COLORS.accent + "15", // 添加与TextPanel一致的背景色
   },
   filterImage: {
-    width: "100%",
-    height: "100%",
+    width: 80,
+    height: 80,
   },
   filterName: {
-    color: "#fff",
+    color: COLORS.text.secondary,
     fontSize: 12,
     textAlign: "center",
+  },
+  selectedFilterName: {
+    color: COLORS.accent,
+    fontWeight: "500", // 与TextPanel一致的字重
   },
   lockOverlay: {
     ...StyleSheet.absoluteFillObject,

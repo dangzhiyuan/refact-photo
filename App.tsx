@@ -44,14 +44,14 @@ import React from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView, StatusBar } from "react-native";
 import { Editor } from "./src/components/Editor";
-import { BaseCanvas } from "./src/canvas/BaseCanvas";
+import { AppNavigator } from "./src/navigation/Navigator";
 
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" />
       <SafeAreaView style={{ flex: 1 }}>
-        <Editor />
+        <AppNavigator />
       </SafeAreaView>
     </GestureHandlerRootView>
   );

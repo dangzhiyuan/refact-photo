@@ -8,170 +8,188 @@ import {
 } from "react-native";
 import { Canvas, Image, useImage } from "@shopify/react-native-skia";
 import { useEditorStore } from "../../store/editorStore";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-} from "react-native-reanimated";
-import { GestureDetector, Gesture } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { GestureDetector } from "react-native-gesture-handler";
+import { useCanvasGestures } from "../../hooks/useCanvasGestures";
+import { COLORS } from "../../theme/colors";
 
-const DEFAULT_IMAGE_URL =
-  "https://img2.baidu.com/it/u=3768614006,1074423183&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=856";
+const DEFAULT_IMAGE_URL = "https://example.com/default.jpg";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const VIEWPORT_HEIGHT = SCREEN_HEIGHT * 0.55;
 
-export const BaseCanvas: React.FC = () => {
-  // 本地加载状态
+interface BaseCanvasProps {
+  initialScale?: number;
+  onSizeChange?: (size: { width: number; height: number }) => void;
+}
+
+export const BaseCanvas: React.FC<BaseCanvasProps> = ({
+  initialScale = 1,
+  onSizeChange,
+}) => {
+  // 状态定义
   const [isLoading, setIsLoading] = useState(true);
-
-  // 状态
   const baseImageUri = useEditorStore((state) => state.baseImageUri);
-
-  // 图像加载
   const userImage = useImage(baseImageUri);
   const defaultImage = useImage(DEFAULT_IMAGE_URL);
   const image = userImage || defaultImage;
 
-  // 检查图像是否加载完成
+  // 直接使用ViewPort尺寸作为Canvas容器尺寸
+  const viewportSize = {
+    width: SCREEN_WIDTH - 40, // 减去Editor中设置的边距
+    height: VIEWPORT_HEIGHT,
+  };
+
+  // Canvas尺寸根据图片计算
+  const [canvasSize, setCanvasSize] = useState({
+    width: 0,
+    height: 0,
+  });
+
+  // 图片加载后计算适当尺寸
   useEffect(() => {
     if (image) {
+      const imgWidth = image.width();
+      const imgHeight = image.height();
+
+      // 计算适合视口的图片尺寸
+      const calculatedSize = calculateFitSize(
+        imgWidth,
+        imgHeight,
+        viewportSize.width,
+        viewportSize.height
+      );
+
+      setCanvasSize(calculatedSize);
+
+      if (onSizeChange) {
+        onSizeChange(calculatedSize);
+      }
+
       setIsLoading(false);
-      console.log("图像已加载!");
-    } else {
-      console.log("图像状态:", {
-        baseImageUri,
-        userImageLoaded: !!userImage,
-        defaultImageLoaded: !!defaultImage,
-        usingImage: !!image,
-      });
     }
-  }, [image, baseImageUri, userImage, defaultImage]);
+  }, [image, onSizeChange]);
 
-  // 位置和缩放值
-  const scale = useSharedValue(1);
-  const savedScale = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-  const startX = useSharedValue(0);
-  const startY = useSharedValue(0);
-
-  // 平移手势
-  const panGesture = Gesture.Pan()
-    .runOnJS(true)
-    .onStart(() => {
-      startX.value = translateX.value;
-      startY.value = translateY.value;
-      console.log("开始拖动");
-    })
-    .onChange((e) => {
-      translateX.value = startX.value + e.changeX;
-      translateY.value = startY.value + e.changeY;
-    })
-    .onEnd(() => {
-      console.log("结束拖动，位置:", {
-        x: translateX.value,
-        y: translateY.value,
-      });
-    });
-
-  // 缩放手势
-  const pinchGesture = Gesture.Pinch()
-    .runOnJS(true)
-    .onStart(() => {
-      savedScale.value = scale.value;
-    })
-    .onChange((e) => {
-      scale.value = savedScale.value * e.scale;
-    });
-
-  // 同时支持两种手势
-  const composedGesture = Gesture.Simultaneous(panGesture, pinchGesture);
+  // 使用手势处理
+  const { gesture, scale, offset } = useCanvasGestures({
+    contentWidth: canvasSize.width,
+    contentHeight: canvasSize.height,
+    initialScale,
+    autoFit: true,
+    viewportWidth: viewportSize.width,
+    viewportHeight: viewportSize.height,
+  });
 
   // 动画样式
-  const animatedStyle = useAnimatedStyle(() => ({
+  const containerStyle = useAnimatedStyle(() => ({
     transform: [
-      { translateX: translateX.value },
-      { translateY: translateY.value },
+      { translateX: offset.value.x },
+      { translateY: offset.value.y },
       { scale: scale.value },
     ],
   }));
 
-  // 加载状态
+  // 尺寸计算辅助函数
+  const calculateFitSize = (
+    imageWidth: number,
+    imageHeight: number,
+    containerWidth: number,
+    containerHeight: number
+  ) => {
+    console.log("计算适配尺寸", {
+      imageWidth,
+      imageHeight,
+      containerWidth,
+      containerHeight,
+    });
+
+    const imageRatio = imageWidth / imageHeight;
+    const containerRatio = containerWidth / containerHeight;
+
+    let finalWidth: number;
+    let finalHeight: number;
+
+    if (imageRatio > containerRatio) {
+      // 图片更宽，基于容器宽度
+      finalWidth = containerWidth * 0.85;
+      finalHeight = finalWidth / imageRatio;
+    } else {
+      // 图片更高，基于容器高度
+      finalHeight = containerHeight * 0.85;
+      finalWidth = finalHeight * imageRatio;
+    }
+
+    return {
+      width: finalWidth,
+      height: finalHeight,
+    };
+  };
+
+  // 加载状态渲染
   if (isLoading) {
-    console.log("显示加载状态...");
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
+      <View style={styles.container}>
         <Text style={styles.loadingText}>加载图像中...</Text>
-        {/* 使用React Native Image作为备用 */}
-        <RNImage
-          source={{ uri: DEFAULT_IMAGE_URL }}
-          style={{ width: 1, height: 1 }} // 小尺寸仅用于触发加载
-          onLoad={() => console.log("RN Image加载成功")}
-          onError={(e) => console.log("RN Image加载失败", e.nativeEvent.error)}
-        />
       </View>
     );
   }
 
-  // 如果图像未加载后仍然没有，显示错误容器
   if (!image) {
-    console.log("图像加载失败");
     return (
-      <View style={[styles.container, styles.errorContainer]}>
+      <View style={styles.container}>
         <Text style={styles.errorText}>无法加载图像</Text>
       </View>
     );
   }
 
-  // 成功加载图像，显示可拖动的Canvas
+  // 渲染图片内容
   return (
-    <GestureDetector gesture={composedGesture}>
-      <Animated.View style={[styles.animatedContainer, animatedStyle]}>
-        <Canvas style={styles.canvas}>
-          <Image
-            image={image}
-            fit="contain"
-            x={0}
-            y={0}
-            width={SCREEN_WIDTH}
-            height={SCREEN_HEIGHT}
-          />
-        </Canvas>
-      </Animated.View>
-    </GestureDetector>
+    <View style={styles.container}>
+      <GestureDetector gesture={gesture}>
+        <Animated.View style={[styles.canvasContainer, containerStyle]}>
+          <Canvas
+            style={[
+              {
+                width: canvasSize.width,
+                height: canvasSize.height,
+                backgroundColor: "rgba(0, 0, 255, 0.1)",
+              },
+            ]}
+          >
+            <Image
+              image={image}
+              fit="fill"
+              x={0}
+              y={0}
+              width={canvasSize.width}
+              height={canvasSize.height}
+            />
+          </Canvas>
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    backgroundColor: "#f0f0f0",
-  },
-  animatedContainer: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-  },
-  canvas: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-  },
-  loadingContainer: {
+    width: "100%",
+    height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#333",
+    backgroundColor: "transparent",
+  },
+  canvasContainer: {
+    alignItems: "center",
+    justifyContent: "center",
   },
   loadingText: {
-    color: "white",
-    fontSize: 18,
-  },
-  errorContainer: {
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#900",
+    color: COLORS.text.secondary,
+    fontSize: 16,
   },
   errorText: {
-    color: "white",
-    fontSize: 18,
+    color: "red",
+    fontSize: 16,
   },
 });
