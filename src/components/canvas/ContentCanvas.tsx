@@ -5,7 +5,6 @@ import { GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useCanvasGestures } from "../../hooks/useCanvasGestures";
 
-// 圆形配置
 const CIRCLE_CONFIG = {
   radius: 50,
   x: 100,
@@ -13,20 +12,16 @@ const CIRCLE_CONFIG = {
   color: "#FF5722",
 };
 
-// 计算Canvas尺寸包含整个圆形
 const CANVAS_WIDTH = CIRCLE_CONFIG.x + CIRCLE_CONFIG.radius * 2;
 const CANVAS_HEIGHT = CIRCLE_CONFIG.y + CIRCLE_CONFIG.radius * 2;
 
-// 添加props接口
 interface ContentCanvasProps {
   initialScale?: number;
 }
 
-// 修改组件定义接受initialScale prop
 export const ContentCanvas: React.FC<ContentCanvasProps> = ({
   initialScale = 1,
 }) => {
-  // 使用手势Hook，传入实际内容尺寸
   const { gesture, scale, offset, isActive } = useCanvasGestures({
     contentWidth: CANVAS_WIDTH,
     contentHeight: CANVAS_HEIGHT,
@@ -34,7 +29,6 @@ export const ContentCanvas: React.FC<ContentCanvasProps> = ({
     autoFit: true,
   });
 
-  // 动画样式
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: offset.value.x },
@@ -66,9 +60,7 @@ export const ContentCanvas: React.FC<ContentCanvasProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    alignSelf: "center", // 居中显示
+    alignSelf: "center",
   },
-  canvas: {
-    // 不设置固定尺寸，由内容决定
-  },
+  canvas: {},
 });

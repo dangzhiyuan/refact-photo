@@ -12,27 +12,7 @@ export const useImageManager = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<ImageManagerError | null>(null);
 
-  // 加载图片为 SkImage
-  const loadImage = async (uri: string) => {
-    try {
-      const response = await fetch(uri);
-      const buffer = await response.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-      const skData = Skia.Data.fromBytes(bytes);
-      const image = Skia.Image.MakeImageFromEncoded(skData);
-
-      if (!image) {
-        throw new Error("Failed to create image");
-      }
-
-      return image;
-    } catch (error) {
-      console.error("Image loading failed:", error);
-      throw error;
-    }
-  };
-
-  // 请求权限 - 专注于权限管理
+  // 请求权限
   const requestPermissions = async () => {
     try {
       const imagePermission =
@@ -57,7 +37,7 @@ export const useImageManager = () => {
     }
   };
 
-  // 专注于图片选择功能
+  // 图片选择
   const pickImage = async () => {
     try {
       setIsLoading(true);
@@ -96,7 +76,6 @@ export const useImageManager = () => {
     }
   };
 
-  // 清除错误
   const clearError = () => {
     setError(null);
   };

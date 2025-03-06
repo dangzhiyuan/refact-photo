@@ -5,10 +5,9 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  StatusBar,
   Dimensions,
 } from "react-native";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import { Icon } from "./common/Icon";
 import { CanvasManager } from "./CanvasManager";
 import { FilterPanel } from "./panels/FilterPanel";
 import { DrawingPanel } from "./panels/DrawingPanel";
@@ -26,11 +25,14 @@ import { useLayerVisibility } from "../hooks/useLayerVisibility";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
+interface CanvasSize {
+  width: number;
+  height: number;
+}
+
 export const Editor: React.FC = () => {
   const currentMode = useEditorStore((state) => state.currentMode);
   const setMode = useEditorStore((state) => state.setMode);
-
-  const [intensityVisible, setIntensityVisible] = useState(false);
   const [isPanelVisible, setIsPanelVisible] = useState(true);
   const [activeCanvas, setActiveCanvas] = useState("base");
   const [activeTool, setActiveTool] = useState<ToolType>(EditorMode.EDIT);
@@ -41,7 +43,7 @@ export const Editor: React.FC = () => {
     height: SCREEN_HEIGHT - 40,
   });
 
-  const handleCanvasSizeChange = useCallback((size) => {
+  const handleCanvasSizeChange = useCallback((size: CanvasSize) => {
     console.log("Canvas size changed:", size);
     if (size.width > 0 && size.height > 0) {
       setImageDimensions(size);
@@ -54,23 +56,8 @@ export const Editor: React.FC = () => {
 
   const handleSave = useCallback(() => {
     console.log("保存图片");
+    // TODO: 实现实际的保存功能
   }, []);
-
-  const handleIntensityToggle = useCallback(() => {
-    setIntensityVisible((prev) => !prev);
-  }, []);
-
-  const handleModeChange = useCallback(
-    (mode: EditorMode) => {
-      if (mode === currentMode) {
-        setIsPanelVisible(!isPanelVisible);
-      } else {
-        setMode(mode);
-        setIsPanelVisible(true);
-      }
-    },
-    [currentMode, isPanelVisible, setMode]
-  );
 
   const handleToolChange = useCallback(
     (tool: ToolType) => {
@@ -78,18 +65,30 @@ export const Editor: React.FC = () => {
         setIsPanelVisible(!isPanelVisible);
       } else {
         setActiveTool(tool);
+        if (
+          tool !== "layer" &&
+          Object.values(EditorMode).includes(tool as EditorMode)
+        ) {
+          setMode(tool as EditorMode);
+        }
+
         setIsPanelVisible(true);
       }
     },
-    [activeTool, isPanelVisible]
+    [activeTool, isPanelVisible, setMode]
   );
+
   const renderToolPanel = useCallback(() => {
     if (!isPanelVisible) return null;
-    const handlePanelClose = () => {
-      setIsPanelVisible(false);
-    };
-    if (activeTool === "layer") {
-      return (
+    const handlePanelClose = () => setIsPanelVisible(false);
+    const panels: Record<string, React.ReactNode> = {
+      [EditorMode.FILTER]: (
+        <FilterPanel onIntensityToggle={() => {}} onClose={handlePanelClose} />
+      ),
+      [EditorMode.DRAW]: <DrawingPanel onClose={handlePanelClose} />,
+      [EditorMode.TEXT]: <TextPanel onClose={handlePanelClose} />,
+      [EditorMode.EDIT]: <AdjustmentPanel onClose={handlePanelClose} />,
+      [EditorMode.LAYER]: (
         <LayerPanel
           activeCanvas={activeCanvas}
           onCanvasChange={setActiveCanvas}
@@ -97,42 +96,48 @@ export const Editor: React.FC = () => {
           visibleLayers={visibleLayers}
           onToggleVisibility={toggleLayerVisibility}
         />
-      );
-    }
-    switch (currentMode) {
-      case EditorMode.FILTER:
-        return <FilterPanel onIntensityToggle={handleIntensityToggle} />;
-      case EditorMode.DRAW:
-        return <DrawingPanel />;
-      case EditorMode.TEXT:
-        return <TextPanel />;
-      case EditorMode.EDIT:
-        return <AdjustmentPanel />;
-      default:
-        return null;
-    }
+      ),
+    };
+    return panels[activeTool] || null;
   }, [
-    currentMode,
-    handleIntensityToggle,
-    isPanelVisible,
     activeTool,
+    isPanelVisible,
     activeCanvas,
     visibleLayers,
     toggleLayerVisibility,
   ]);
 
+  const viewportConfig = {
+    backgroundColor: COLORS.canvasBackground,
+    borderRadius: 15,
+    useGradient: true,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    initialScale: 0.8,
+    fitScale: 0.85,
+    borderStyle: "corners" as const,
+    shadowProps: {
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+    },
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* 顶部工具栏 */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={handleClose}>
-          <Ionicons name="close" size={24} color={COLORS.text.primary} />
+          <Icon name="close" size={24} color={COLORS.text.primary} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.headerButton} onPress={handleSave}>
-          <Ionicons name="checkmark" size={24} color={COLORS.text.primary} />
+          <Icon name="checkmark" size={24} color={COLORS.text.primary} />
         </TouchableOpacity>
       </View>
 
+      {/* 画布视窗 */}
       <View
         style={{
           alignSelf: "center",
@@ -140,33 +145,18 @@ export const Editor: React.FC = () => {
           justifyContent: "center",
           width: imageDimensions.width,
           height: imageDimensions.height,
-          // 添加边框可以检查容器是否与图片尺寸匹配（调试用）
-          // borderWidth: 1,
-          // borderColor: 'red',
         }}
       >
         <CanvasViewport
           activeCanvas={activeCanvas}
           setActiveCanvas={setActiveCanvas}
-          backgroundColor={COLORS.canvasBackground}
-          borderRadius={15}
-          useGradient={true}
-          paddingHorizontal={0}
-          paddingVertical={0}
-          initialScale={0.8}
-          fitScale={0.85}
-          borderStyle="corners"
-          shadowProps={{
-            shadowColor: "#000",
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-          }}
           visibleLayers={visibleLayers}
           onCanvasSizeChange={handleCanvasSizeChange}
+          {...viewportConfig}
         />
       </View>
 
+      {/* 底部工具区域 */}
       <View style={[styles.toolsSection, { flex: 1 }]}>
         <Toolbar
           activeCanvas={activeCanvas}
@@ -209,7 +199,6 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderRightWidth: 1,
     borderColor: COLORS.border,
-    // 添加阴影效果
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.05,
@@ -218,48 +207,5 @@ const styles = StyleSheet.create({
   },
   panelContainer: {
     flex: 1,
-  },
-  intensityContainer: {
-    position: "absolute",
-    bottom: 10,
-    left: 0,
-    right: 0,
-    height: 50,
-    paddingHorizontal: 20,
-    alignItems: "center",
-  },
-  intensitySlider: {
-    width: "100%",
-    height: 30,
-    backgroundColor: "rgba(50, 50, 50, 0.5)",
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "flex-end",
-    paddingRight: 10,
-  },
-  intensityValue: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  toolbar: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#333",
-    paddingBottom: 30, // 增加底部空间，适应没有安全区域的设备
-  },
-  toolButton: {
-    alignItems: "center",
-    padding: 8,
-  },
-  activeToolButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderRadius: 12,
-  },
-  toolText: {
-    color: "#fff",
-    fontSize: 12,
-    marginTop: 4,
   },
 });

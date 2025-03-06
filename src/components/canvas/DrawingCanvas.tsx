@@ -8,7 +8,6 @@ import Animated, {
   useSharedValue,
 } from "react-native-reanimated";
 
-// 与BaseCanvas相同的默认图像URL
 const DEFAULT_IMAGE_URL =
   "https://img2.baidu.com/it/u=3768614006,1074423183&fm=253&fmt=auto&app=120&f=JPEG?w=500&h=856";
 
@@ -19,19 +18,16 @@ export const DrawingCanvas: React.FC<{
   onActivate?: () => void;
   disableGestures?: boolean;
 }> = ({ isActive = false, onActivate = () => {}, disableGestures }) => {
-  // 获取基础图像 - 与BaseCanvas相同
   const baseImageUri = useEditorStore((state) => state.baseImageUri);
   const userImage = useImage(baseImageUri);
   const defaultImage = useImage(DEFAULT_IMAGE_URL);
   const image = userImage || defaultImage;
 
-  // 手势状态
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const offset = useSharedValue({ x: 0, y: 0 });
   const start = useSharedValue({ x: 0, y: 0 });
 
-  // 拖动手势
   const panGesture = Gesture.Pan()
     .enabled(isActive && !disableGestures)
     .averageTouches(true)
@@ -49,16 +45,13 @@ export const DrawingCanvas: React.FC<{
     })
     .runOnJS(true);
 
-  // 添加点击手势来激活画布
   const tapGesture = Gesture.Tap().onEnd(() => {
     console.log("DrawingCanvas 被点击并激活");
     onActivate();
   });
 
-  // 组合点击和拖动手势
   const composed = Gesture.Race(panGesture, tapGesture);
 
-  // 动画样式
   const animatedStyles = useAnimatedStyle(() => ({
     transform: [
       { translateX: offset.value.x },
@@ -77,7 +70,6 @@ export const DrawingCanvas: React.FC<{
         ]}
       >
         <Canvas style={styles.canvas}>
-          {/* 首先渲染基础图像 */}
           <Image
             image={image}
             fit="contain"
@@ -86,8 +78,6 @@ export const DrawingCanvas: React.FC<{
             width={SCREEN_WIDTH}
             height={SCREEN_HEIGHT}
           />
-
-          {/* 然后渲染绘画内容 */}
           <Group>{/* 绘画内容 */}</Group>
         </Canvas>
       </Animated.View>

@@ -6,7 +6,8 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "../common/Icon";
+import { ComponentProps } from "react";
 import { COLORS } from "../../theme/colors";
 import Slider from "@react-native-community/slider";
 
@@ -21,19 +22,19 @@ export const DrawingPanel: React.FC<DrawingPanelProps> = ({ onClose }) => {
 
   const drawingTools = [
     { id: "brush", name: "画笔", icon: "brush-outline" },
-    { id: "pen", name: "钢笔", icon: "pencil-outline" },
+    { id: "pen", name: "马克笔", icon: "pencil-outline" },
     { id: "eraser", name: "橡皮擦", icon: "trash-outline" },
   ];
 
   const colorOptions = [
-    "#FF6B95", // 粉色
-    "#3478F6", // 蓝色
-    "#4CD964", // 绿色
-    "#FFCC00", // 黄色
-    "#FF3B30", // 红色
-    "#5856D6", // 紫色
-    "#000000", // 黑色
-    "#FFFFFF", // 白色
+    "#FF6B95",
+    "#3478F6",
+    "#4CD964",
+    "#FFCC00",
+    "#FF3B30",
+    "#5856D6",
+    "#000000",
+    "#FFFFFF",
   ];
 
   return (
@@ -42,11 +43,7 @@ export const DrawingPanel: React.FC<DrawingPanelProps> = ({ onClose }) => {
         <Text style={styles.title}>绘画工具</Text>
         {onClose && (
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons
-              name="close-outline"
-              size={24}
-              color={COLORS.text.primary}
-            />
+            <Icon name="close-outline" size={24} color={COLORS.text.primary} />
           </TouchableOpacity>
         )}
       </View>
@@ -64,7 +61,7 @@ export const DrawingPanel: React.FC<DrawingPanelProps> = ({ onClose }) => {
                 ]}
                 onPress={() => setSelectedTool(tool.id)}
               >
-                <Ionicons
+                <Icon
                   name={tool.icon}
                   size={22}
                   color={

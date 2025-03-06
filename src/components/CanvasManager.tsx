@@ -4,19 +4,15 @@ import { BaseCanvas } from "./canvas/BaseCanvas";
 import { DrawingCanvas } from "./canvas/DrawingCanvas";
 import { ContentCanvas } from "./canvas/ContentCanvas";
 import { ControlCanvas } from "./canvas/ControlCanvas";
-import { SimpleDragTest } from "../canvas/SimpleDragTest";
+import { LayerVisibility } from "../hooks/useLayerVisibility";
+import { SimpleDragTest } from "../temptools/SimpleDragTest";
 
 interface CanvasManagerProps {
   activeCanvas: string;
   setActiveCanvas: (canvasType: string) => void;
   initialScale?: number;
   fitScale?: number;
-  visibleLayers?: {
-    base: boolean;
-    drawing: boolean;
-    content: boolean;
-    control: boolean;
-  };
+  visibleLayers?: LayerVisibility;
   onCanvasSizeChange?: (size: { width: number; height: number }) => void;
 }
 

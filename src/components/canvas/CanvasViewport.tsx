@@ -3,13 +3,12 @@ import { View, StyleSheet, Dimensions } from "react-native";
 import { CanvasManager } from "../CanvasManager";
 import LinearGradient from "react-native-linear-gradient";
 import { COLORS } from "../../theme/colors";
+import { LayerVisibility } from "../../hooks/useLayerVisibility";
 
 interface CanvasViewportProps {
   activeCanvas: string;
   setActiveCanvas: (canvasType: string) => void;
   initialScale?: number;
-
-  // 添加自定义样式属性
   backgroundColor?: string;
   borderRadius?: number;
   padding?: number;
@@ -25,23 +24,15 @@ interface CanvasViewportProps {
     shadowRadius?: number;
   };
   borderStyle?: "corners" | "none";
-  fitScale?: number; // 控制初始适配的比例 (0-1)
-  visibleLayers?: {
-    base: boolean;
-    drawing: boolean;
-    content: boolean;
-    control: boolean;
-  };
+  fitScale?: number;
+  visibleLayers?: LayerVisibility;
   onCanvasSizeChange: (size: { width: number; height: number }) => void;
 }
 
-// 获取屏幕尺寸
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-// 视口高度固定为屏幕高度的55%
 const VIEWPORT_HEIGHT = SCREEN_HEIGHT * 0.55;
 
-// 圆角边框装饰
 const BorderDecorator = () => (
   <>
     <View style={styles.topLeftCorner} />
@@ -77,11 +68,6 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
     paddingHorizontal: paddingHorizontal > 0 ? paddingHorizontal : undefined,
     paddingVertical: paddingVertical > 0 ? paddingVertical : undefined,
   };
-
-  useEffect(() => {
-    // 这里可以添加逻辑，将初始偏移信息传递给Canvas组件
-    // 例如通过Context或全局状态
-  }, []);
 
   return (
     <View style={[viewportStyle, shadowProps, { elevation: elevation || 0 }]}>
@@ -120,9 +106,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
 const styles = StyleSheet.create({
   viewport: {
     width: "100%",
-    // 移除固定高度
-    // height: VIEWPORT_HEIGHT,
-    height: "100%", // 使用100%高度
+    height: "100%",
     position: "relative",
     overflow: "hidden",
   },
@@ -153,7 +137,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderTopWidth: 2,
     borderLeftWidth: 2,
-    borderColor: COLORS.accent + "40", // 使用半透明粉色
+    borderColor: COLORS.accent + "40",
     borderTopLeftRadius: 5,
   },
   topRightCorner: {
@@ -164,7 +148,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderTopWidth: 2,
     borderRightWidth: 2,
-    borderColor: "rgba(52, 120, 246, 0.4)", // 使用半透明蓝色
+    borderColor: "rgba(52, 120, 246, 0.4)",
     borderTopRightRadius: 5,
   },
   bottomLeftCorner: {
@@ -175,7 +159,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderBottomWidth: 2,
     borderLeftWidth: 2,
-    borderColor: "rgba(52, 120, 246, 0.4)", // 使用半透明蓝色
+    borderColor: "rgba(52, 120, 246, 0.4)",
     borderBottomLeftRadius: 5,
   },
   bottomRightCorner: {
@@ -186,7 +170,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderBottomWidth: 2,
     borderRightWidth: 2,
-    borderColor: "rgba(52, 120, 246, 0.4)", // 使用半透明蓝色
+    borderColor: "rgba(52, 120, 246, 0.4)",
     borderBottomRightRadius: 5,
   },
 });

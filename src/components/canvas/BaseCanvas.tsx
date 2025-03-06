@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from "react";
-import {
-  StyleSheet,
-  Dimensions,
-  View,
-  Image as RNImage,
-  Text,
-} from "react-native";
-import { Canvas, Image, useImage } from "@shopify/react-native-skia";
-import { useEditorStore } from "../../store/editorStore";
-import Animated, { useAnimatedStyle } from "react-native-reanimated";
+import { StyleSheet, Dimensions, View, Text } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useCanvasGestures } from "../../hooks/useCanvasGestures";
 import { COLORS } from "../../theme/colors";
+import { useImageLoader } from "../../hooks/useImageLoader";
+import { calculateFitSize } from "../../utils/canvasUtils";
+import { CanvasImage } from "./CanvasImage";
 
 const DEFAULT_IMAGE_URL = "https://example.com/default.jpg";
 
@@ -27,32 +22,23 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
   initialScale = 1,
   onSizeChange,
 }) => {
-  // 状态定义
-  const [isLoading, setIsLoading] = useState(true);
-  const baseImageUri = useEditorStore((state) => state.baseImageUri);
-  const userImage = useImage(baseImageUri);
-  const defaultImage = useImage(DEFAULT_IMAGE_URL);
-  const image = userImage || defaultImage;
+  const { image, isLoading } = useImageLoader(DEFAULT_IMAGE_URL);
 
-  // 直接使用ViewPort尺寸作为Canvas容器尺寸
   const viewportSize = {
-    width: SCREEN_WIDTH - 40, // 减去Editor中设置的边距
+    width: SCREEN_WIDTH - 40,
     height: VIEWPORT_HEIGHT,
   };
 
-  // Canvas尺寸根据图片计算
   const [canvasSize, setCanvasSize] = useState({
     width: 0,
     height: 0,
   });
 
-  // 图片加载后计算适当尺寸
   useEffect(() => {
     if (image) {
       const imgWidth = image.width();
       const imgHeight = image.height();
 
-      // 计算适合视口的图片尺寸
       const calculatedSize = calculateFitSize(
         imgWidth,
         imgHeight,
@@ -65,12 +51,9 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
       if (onSizeChange) {
         onSizeChange(calculatedSize);
       }
-
-      setIsLoading(false);
     }
-  }, [image, onSizeChange]);
+  }, [image, onSizeChange, viewportSize.width, viewportSize.height]);
 
-  // 使用手势处理
   const { gesture, scale, offset } = useCanvasGestures({
     contentWidth: canvasSize.width,
     contentHeight: canvasSize.height,
@@ -80,7 +63,6 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
     viewportHeight: viewportSize.height,
   });
 
-  // 动画样式
   const containerStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: offset.value.x },
@@ -89,87 +71,41 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
     ],
   }));
 
-  // 尺寸计算辅助函数
-  const calculateFitSize = (
-    imageWidth: number,
-    imageHeight: number,
-    containerWidth: number,
-    containerHeight: number
-  ) => {
-    console.log("计算适配尺寸", {
-      imageWidth,
-      imageHeight,
-      containerWidth,
-      containerHeight,
-    });
-
-    const imageRatio = imageWidth / imageHeight;
-    const containerRatio = containerWidth / containerHeight;
-
-    let finalWidth: number;
-    let finalHeight: number;
-
-    if (imageRatio > containerRatio) {
-      // 图片更宽，基于容器宽度
-      finalWidth = containerWidth * 0.85;
-      finalHeight = finalWidth / imageRatio;
-    } else {
-      // 图片更高，基于容器高度
-      finalHeight = containerHeight * 0.85;
-      finalWidth = finalHeight * imageRatio;
-    }
-
-    return {
-      width: finalWidth,
-      height: finalHeight,
-    };
-  };
-
-  // 加载状态渲染
   if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.loadingText}>加载图像中...</Text>
-      </View>
-    );
+    return <LoadingState />;
   }
 
   if (!image) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>无法加载图像</Text>
-      </View>
-    );
+    return <ErrorState />;
   }
 
-  // 渲染图片内容
   return (
     <View style={styles.container}>
       <GestureDetector gesture={gesture}>
         <Animated.View style={[styles.canvasContainer, containerStyle]}>
-          <Canvas
-            style={[
-              {
-                width: canvasSize.width,
-                height: canvasSize.height,
-                backgroundColor: "rgba(0, 0, 255, 0.1)",
-              },
-            ]}
-          >
-            <Image
-              image={image}
-              fit="fill"
-              x={0}
-              y={0}
-              width={canvasSize.width}
-              height={canvasSize.height}
-            />
-          </Canvas>
+          <CanvasImage
+            image={image}
+            width={canvasSize.width}
+            height={canvasSize.height}
+            style={{ backgroundColor: "rgba(0, 0, 255, 0.1)" }}
+          />
         </Animated.View>
       </GestureDetector>
     </View>
   );
 };
+
+const LoadingState = () => (
+  <View style={styles.container}>
+    <Text style={styles.loadingText}>加载图像中...</Text>
+  </View>
+);
+
+const ErrorState = () => (
+  <View style={styles.container}>
+    <Text style={styles.errorText}>无法加载图像</Text>
+  </View>
+);
 
 const styles = StyleSheet.create({
   container: {

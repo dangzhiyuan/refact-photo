@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useEditorStore } from "../../store/editorStore";
 import { COLORS } from "../../theme/colors";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "../common/Icon";
 
 interface FilterPanelProps {
   onIntensityToggle: () => void;
@@ -50,17 +50,12 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
         <Text style={styles.title}>滤镜</Text>
         {onClose && (
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons
-              name="close-outline"
-              size={24}
-              color={COLORS.text.primary}
-            />
+            <Icon name="close-outline" size={24} color={COLORS.text.primary} />
           </TouchableOpacity>
         )}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* 分类选项卡 */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -87,7 +82,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
           ))}
         </ScrollView>
 
-        {/* 滤镜选项 */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -113,7 +107,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                 />
                 {filter.icon && (
                   <View style={styles.lockOverlay}>
-                    <Ionicons
+                    <Icon
                       name="lock-closed"
                       size={20}
                       color="white"

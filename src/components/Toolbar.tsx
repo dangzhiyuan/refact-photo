@@ -1,20 +1,17 @@
 import React from "react";
 import { View, StyleSheet, TouchableOpacity, Text } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "./common/Icon";
 import { EditorMode } from "../core/types/canvas";
 import { COLORS } from "../theme/colors";
 
-// 定义可能的编辑器工具类型
-export type ToolType = "layer" | EditorMode;
+export type ToolType = EditorMode;
 
 interface ToolbarProps {
   activeCanvas: string;
   onCanvasChange: (canvasType: string) => void;
   currentMode: EditorMode;
   onModeChange: (mode: EditorMode) => void;
-  // 新增：当前活动的工具类型
   activeTool: ToolType;
-  // 新增：切换工具回调
   onToolChange: (tool: ToolType) => void;
 }
 
@@ -24,26 +21,15 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   activeTool,
   onToolChange,
 }) => {
-  // 主工具选项
   const mainTools = [
-    { id: "layer", name: "图层", icon: "layers-outline" },
-    { id: EditorMode.EDIT, name: "调整", icon: "options-outline" },
-    { id: EditorMode.FILTER, name: "滤镜", icon: "color-filter-outline" },
-    { id: EditorMode.TEXT, name: "文字", icon: "text-outline" },
-    { id: EditorMode.DRAW, name: "绘画", icon: "brush-outline" },
+    { id: "layer", name: "图层", icon: "layers" },
+    { id: EditorMode.EDIT, name: "调整", icon: "options" },
+    { id: EditorMode.FILTER, name: "滤镜", icon: "color-filter" },
+    { id: EditorMode.TEXT, name: "文字", icon: "text" },
+    { id: EditorMode.DRAW, name: "绘画", icon: "brush" },
   ];
 
-  // 创建处理工具点击的函数
   const handleToolPress = (toolId: ToolType) => {
-    // 如果是当前已选中的工具，不需要做任何处理
-    // 事件会冒泡到Editor中，由Editor判断是否切换面板可见性
-
-    // 如果是EditorMode类型的工具，还需更新mode
-    if (toolId !== "layer") {
-      onModeChange(toolId as EditorMode);
-    }
-
-    // 更新活动工具
     onToolChange(toolId);
   };
 
@@ -59,13 +45,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({
             ]}
             onPress={() => handleToolPress(tool.id as ToolType)}
           >
-            <Ionicons
+            <Icon
               name={tool.icon}
               size={22}
               color={
-                activeTool === tool.id
-                  ? COLORS.icon.active
-                  : COLORS.icon.inactive
+                activeTool === tool.id ? COLORS.accent : COLORS.icon.inactive
               }
             />
             <Text

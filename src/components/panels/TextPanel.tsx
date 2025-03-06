@@ -7,7 +7,8 @@ import {
   ScrollView,
   TextInput,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "../common/Icon";
+import { ComponentProps } from "react";
 import { COLORS } from "../../theme/colors";
 
 interface TextPanelProps {
@@ -28,9 +29,21 @@ export const TextPanel: React.FC<TextPanelProps> = ({ onClose }) => {
   ];
 
   const alignOptions = [
-    { id: "left", icon: "text" },
-    { id: "center", icon: "text" },
-    { id: "right", icon: "text" },
+    {
+      id: "left",
+      name: "左对齐",
+      icon: "text" as ComponentProps<typeof Icon>["name"],
+    },
+    {
+      id: "center",
+      name: "居中",
+      icon: "text" as ComponentProps<typeof Icon>["name"],
+    },
+    {
+      id: "right",
+      name: "右对齐",
+      icon: "text" as ComponentProps<typeof Icon>["name"],
+    },
   ];
 
   return (
@@ -39,11 +52,7 @@ export const TextPanel: React.FC<TextPanelProps> = ({ onClose }) => {
         <Text style={styles.title}>添加文字</Text>
         {onClose && (
           <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Ionicons
-              name="close-outline"
-              size={24}
-              color={COLORS.text.primary}
-            />
+            <Icon name="close-outline" size={24} color={COLORS.text.primary} />
           </TouchableOpacity>
         )}
       </View>
@@ -94,7 +103,7 @@ export const TextPanel: React.FC<TextPanelProps> = ({ onClose }) => {
               style={styles.sizeButton}
               onPress={() => setFontSize((prev) => Math.max(10, prev - 2))}
             >
-              <Ionicons name="remove" size={18} color={COLORS.text.primary} />
+              <Icon name="remove" size={18} color={COLORS.text.primary} />
             </TouchableOpacity>
 
             <Text style={styles.sizeValue}>{fontSize}</Text>
@@ -103,7 +112,7 @@ export const TextPanel: React.FC<TextPanelProps> = ({ onClose }) => {
               style={styles.sizeButton}
               onPress={() => setFontSize((prev) => Math.min(60, prev + 2))}
             >
-              <Ionicons name="add" size={18} color={COLORS.text.primary} />
+              <Icon name="add" size={18} color={COLORS.text.primary} />
             </TouchableOpacity>
           </View>
         </View>
@@ -120,7 +129,7 @@ export const TextPanel: React.FC<TextPanelProps> = ({ onClose }) => {
                 ]}
                 onPress={() => setTextAlign(option.id)}
               >
-                <Ionicons
+                <Icon
                   name={option.icon}
                   size={20}
                   color={
