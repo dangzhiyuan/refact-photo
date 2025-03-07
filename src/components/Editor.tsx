@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Dimensions,
+  ScrollView,
 } from "react-native";
 import { Icon } from "./common/Icon";
 import { CanvasManager } from "./CanvasManager";
@@ -22,6 +23,9 @@ import { useNavigation } from "@react-navigation/native";
 import { CanvasViewport } from "./canvas/CanvasViewport";
 import { COLORS } from "../theme/colors";
 import { useLayerVisibility } from "../hooks/useLayerVisibility";
+import { StickerPanel } from "./panels/StickerPanel";
+import { useCanvasStore } from "../store/canvasStore";
+import { LayerType } from "../core/types/canvas";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -43,6 +47,14 @@ export const Editor: React.FC = () => {
     height: SCREEN_HEIGHT - 40,
   });
 
+  // 从 canvasStore 获取贴纸图层信息
+  const { layers, layerIds } = useCanvasStore();
+
+  // 过滤出贴纸类型的图层
+  const stickerLayers = layerIds.filter(
+    (id) => layers[id] && layers[id].type === LayerType.STICKER
+  );
+
   const handleCanvasSizeChange = useCallback((size: CanvasSize) => {
     console.log("Canvas size changed:", size);
     if (size.width > 0 && size.height > 0) {
@@ -61,17 +73,23 @@ export const Editor: React.FC = () => {
 
   const handleToolChange = useCallback(
     (tool: ToolType) => {
+      // 特殊处理贴纸工具，防止闪烁
+      if (tool === EditorMode.STICKER) {
+        setActiveTool(tool);
+        setMode(tool as EditorMode);
+        // 确保面板始终可见
+        setIsPanelVisible(true);
+        return;
+      }
+
+      // 其他工具的处理
       if (tool === activeTool) {
         setIsPanelVisible(!isPanelVisible);
       } else {
         setActiveTool(tool);
-        if (
-          tool !== "layer" &&
-          Object.values(EditorMode).includes(tool as EditorMode)
-        ) {
+        if (Object.values(EditorMode).includes(tool as EditorMode)) {
           setMode(tool as EditorMode);
         }
-
         setIsPanelVisible(true);
       }
     },
@@ -95,6 +113,12 @@ export const Editor: React.FC = () => {
           onClose={handlePanelClose}
           visibleLayers={visibleLayers}
           onToggleVisibility={toggleLayerVisibility}
+        />
+      ),
+      [EditorMode.STICKER]: (
+        <StickerPanel
+          onClose={handlePanelClose}
+          setActiveCanvas={setActiveCanvas}
         />
       ),
     };
@@ -124,6 +148,91 @@ export const Editor: React.FC = () => {
     },
   };
 
+  // 快速图层选择器组件
+  const QuickLayerSelector: React.FC = () => {
+    // 静态图层
+    const staticLayers = [
+      { id: "base", name: "基础图像", icon: "image-outline" },
+      { id: "drawing", name: "画布1", icon: "brush-outline" },
+      { id: "content", name: "画布2", icon: "text-outline" },
+      { id: "control", name: "画布3", icon: "settings-outline" },
+    ];
+
+    // 合并静态图层和贴纸图层
+    const stickerLayerItems = stickerLayers.map((id) => ({
+      id,
+      name: `贴纸 ${id.substring(id.length > 5 ? id.length - 5 : 0)}`,
+      icon: "images-outline",
+    }));
+
+    const allLayers = [...staticLayers, ...stickerLayerItems];
+
+    return (
+      <View style={layerSelectorStyles.container}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {allLayers.map((layer) => (
+            <TouchableOpacity
+              key={layer.id}
+              style={[
+                layerSelectorStyles.layerButton,
+                activeCanvas === layer.id &&
+                  layerSelectorStyles.activeLayerButton,
+              ]}
+              onPress={() => setActiveCanvas(layer.id)}
+            >
+              <Icon
+                name={layer.icon}
+                size={18}
+                color={
+                  activeCanvas === layer.id
+                    ? COLORS.accent
+                    : COLORS.icon.inactive
+                }
+              />
+              <Text
+                style={[
+                  layerSelectorStyles.layerButtonText,
+                  activeCanvas === layer.id &&
+                    layerSelectorStyles.activeLayerButtonText,
+                ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {layer.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    );
+  };
+
+  // 贴纸操作处理函数
+  const handleStickerDelete = useCallback(
+    (layerId: string) => {
+      // 删除贴纸前，如果它是当前选中的，先切换到基础图层
+      if (activeCanvas === layerId) {
+        setActiveCanvas("base");
+      }
+
+      // 调用删除函数
+      const { deleteLayer } = useCanvasStore.getState();
+      if (deleteLayer) {
+        deleteLayer(layerId);
+      }
+    },
+    [activeCanvas, setActiveCanvas]
+  );
+
+  // 贴纸选择处理函数
+  const handleStickerSelect = useCallback(
+    (layerId: string) => {
+      // 直接切换到该贴纸图层
+      setActiveCanvas(layerId);
+    },
+    [setActiveCanvas]
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 顶部工具栏 */}
@@ -136,6 +245,9 @@ export const Editor: React.FC = () => {
           <Icon name="checkmark" size={24} color={COLORS.text.primary} />
         </TouchableOpacity>
       </View>
+
+      {/* 快速图层选择器 */}
+      <QuickLayerSelector />
 
       {/* 画布视窗 */}
       <View
@@ -207,5 +319,61 @@ const styles = StyleSheet.create({
   },
   panelContainer: {
     flex: 1,
+  },
+  quickLayerSelector: {
+    flexDirection: "row",
+    padding: 10,
+  },
+  layerButton: {
+    padding: 10,
+  },
+  activeLayerButton: {
+    backgroundColor: COLORS.accent,
+  },
+  layerButtonText: {
+    marginTop: 5,
+  },
+  activeLayerButtonText: {
+    fontWeight: "bold",
+  },
+});
+
+// 添加图层选择器样式
+const layerSelectorStyles = StyleSheet.create({
+  container: {
+    backgroundColor: COLORS.panelBackground,
+    borderRadius: 8,
+    marginHorizontal: 10,
+    marginBottom: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  layerButton: {
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 8,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    minWidth: 60,
+  },
+  activeLayerButton: {
+    backgroundColor: COLORS.accent + "15",
+  },
+  layerButtonText: {
+    fontSize: 10,
+    marginTop: 4,
+    color: COLORS.text.secondary,
+    textAlign: "center",
+    maxWidth: 60,
+  },
+  activeLayerButtonText: {
+    color: COLORS.accent,
+    fontWeight: "600",
   },
 });

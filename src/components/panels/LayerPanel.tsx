@@ -9,6 +9,8 @@ import {
 import { Icon } from "../common/Icon";
 import { ComponentProps } from "react";
 import { COLORS } from "../../theme/colors";
+import { useCanvasStore } from "../../store/canvasStore";
+import { CanvasType, LayerType } from "../../core/types/canvas";
 
 interface LayerPanelProps {
   activeCanvas: string;
@@ -18,6 +20,14 @@ interface LayerPanelProps {
   onToggleVisibility: (layerId: string) => void;
 }
 
+// 定义图层选项的接口
+interface LayerOption {
+  id: string;
+  name: string;
+  icon: string;
+  type?: LayerType; // 添加可选的 type 属性
+}
+
 export const LayerPanel: React.FC<LayerPanelProps> = ({
   activeCanvas,
   onCanvasChange,
@@ -25,12 +35,29 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   visibleLayers,
   onToggleVisibility,
 }) => {
-  const canvasOptions = [
+  // 获取固定的画布选项
+  const staticCanvasOptions: LayerOption[] = [
     { id: "base", name: "基础图像", icon: "image-outline" },
     { id: "drawing", name: "画布1", icon: "brush-outline" },
     { id: "content", name: "画布2", icon: "text-outline" },
     { id: "control", name: "画布3", icon: "settings-outline" },
   ];
+
+  // 从 canvasStore 获取贴纸图层
+  const { layers, layerIds } = useCanvasStore();
+
+  // 过滤出所有贴纸类型的图层
+  const stickerLayers = layerIds
+    .filter((id) => layers[id] && layers[id].type === LayerType.STICKER)
+    .map((id) => ({
+      id,
+      name: `贴纸 ${id.substring(id.length - 5)}`, // 使用ID的最后5个字符作为名称后缀
+      icon: "images-outline",
+      type: LayerType.STICKER,
+    }));
+
+  // 合并静态画布和动态贴纸图层
+  const allLayers = [...staticCanvasOptions, ...stickerLayers];
 
   return (
     <View style={styles.container}>
@@ -43,21 +70,25 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
         )}
       </View>
       <ScrollView style={styles.content}>
-        {canvasOptions.map((canvas) => {
+        {allLayers.map((layer) => {
+          // 检查图层是否是贴纸类型
+          const isSticker = layer.type === LayerType.STICKER;
+
           return (
             <TouchableOpacity
-              key={canvas.id}
+              key={layer.id}
               style={[
                 styles.layerItem,
-                activeCanvas === canvas.id && styles.activeLayerItem,
+                activeCanvas === layer.id && styles.activeLayerItem,
+                isSticker && styles.stickerLayerItem, // 为贴纸图层添加特殊样式
               ]}
-              onPress={() => onCanvasChange(canvas.id)}
+              onPress={() => onCanvasChange(layer.id)}
             >
               <Icon
-                name={canvas.icon}
+                name={layer.icon}
                 size={22}
                 color={
-                  activeCanvas === canvas.id
+                  activeCanvas === layer.id
                     ? COLORS.accent
                     : COLORS.icon.inactive
                 }
@@ -65,25 +96,26 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
               <Text
                 style={[
                   styles.layerName,
-                  activeCanvas === canvas.id && styles.activeLayerName,
+                  activeCanvas === layer.id && styles.activeLayerName,
+                  isSticker && styles.stickerLayerName, // 为贴纸图层名称添加特殊样式
                 ]}
               >
-                {canvas.name}
+                {layer.name}
               </Text>
               <View style={styles.layerActions}>
                 <TouchableOpacity
                   style={styles.actionButton}
-                  onPress={() => onToggleVisibility(canvas.id)}
+                  onPress={() => onToggleVisibility(layer.id)}
                 >
                   <Icon
                     name={
-                      visibleLayers[canvas.id as keyof typeof visibleLayers]
+                      visibleLayers[layer.id] !== false
                         ? "eye-outline"
                         : "eye-off-outline"
                     }
                     size={20}
                     color={
-                      visibleLayers[canvas.id as keyof typeof visibleLayers]
+                      visibleLayers[layer.id] !== false
                         ? COLORS.accent
                         : COLORS.icon.inactive
                     }
@@ -146,6 +178,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.accent + "15",
     borderColor: COLORS.accent + "30",
   },
+  stickerLayerItem: {
+    backgroundColor: COLORS.accent + "08", // 给贴纸图层添加轻微的不同背景
+  },
   layerName: {
     flex: 1,
     marginLeft: 16,
@@ -155,6 +190,9 @@ const styles = StyleSheet.create({
   activeLayerName: {
     color: COLORS.accent,
     fontWeight: "600",
+  },
+  stickerLayerName: {
+    fontStyle: "italic", // 贴纸图层的名称使用斜体
   },
   layerActions: {
     flexDirection: "row",

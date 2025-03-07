@@ -26,6 +26,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
     { id: EditorMode.EDIT, name: "调整", icon: "options" },
     { id: EditorMode.FILTER, name: "滤镜", icon: "color-filter" },
     { id: EditorMode.TEXT, name: "文字", icon: "text" },
+    { id: EditorMode.STICKER, name: "贴纸", icon: "images" },
     { id: EditorMode.DRAW, name: "绘画", icon: "brush" },
   ];
 

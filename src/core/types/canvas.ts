@@ -3,6 +3,7 @@ export enum CanvasType {
   CONTENT = "content",
   DRAWING = "drawing",
   CONTROL = "control",
+  STICKER = "sticker",
 }
 
 export interface BaseLayer {
@@ -47,6 +48,9 @@ export interface TextLayer extends BaseLayer {
 export interface StickerLayer extends BaseLayer {
   type: LayerType.STICKER;
   stickerUri: string;
+  width: number;
+  height: number;
+  matrix?: any;
 }
 
 export interface DrawingLayer extends BaseLayer {
@@ -76,6 +80,7 @@ export enum EditorMode {
   TEXT = "text",
   FILTER = "filter",
   LAYER = "layer",
+  STICKER = "sticker",
 }
 
 export type Layer = ImageLayer | TextLayer | StickerLayer | DrawingLayer;

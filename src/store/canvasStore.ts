@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { v4 as uuidv4 } from "uuid";
+import { generateId } from "../utils/idGenerator";
 import { Layer, LayerType, Transform, CanvasType } from "../core/types/canvas";
 
 interface CanvasState {
@@ -49,7 +49,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   // 图层操作
   addLayer: (layerData) => {
-    const id = uuidv4();
+    const id = generateId("layer");
     const layer = { ...layerData, id } as Layer;
 
     set((state) => ({
