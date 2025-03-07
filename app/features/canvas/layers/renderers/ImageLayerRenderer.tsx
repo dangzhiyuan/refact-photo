@@ -21,7 +21,6 @@ export const ImageLayerRenderer: FC<LayerRendererProps> = ({
   const { updateLayer } = useLayerStore();
   const initialRenderRef = useRef(true);
 
-  // 处理滤镜效果
   useEffect(() => {
     if (filterType === "normal") {
       return;
@@ -42,9 +41,7 @@ export const ImageLayerRenderer: FC<LayerRendererProps> = ({
     };
   }, [imageSource, filterType, updateLayer]);
 
-  // 检测是否需要自动居中
   useEffect(() => {
-    // 只在组件首次渲染并且图层位置和缩放接近默认值时执行
     if (initialRenderRef.current) {
       initialRenderRef.current = false;
 
@@ -53,12 +50,10 @@ export const ImageLayerRenderer: FC<LayerRendererProps> = ({
         Math.abs(position.x) < 10 && Math.abs(position.y) < 10;
       const isDefaultScale = Math.abs(scale - 1.0) < 0.1;
 
-      // 如果是默认位置和缩放，则自动居中
       if (isDefaultPosition && isDefaultScale) {
         const imageWidth = imageSource.width();
         const imageHeight = imageSource.height();
 
-        // 获取画布尺寸
         const { canvasWidth, canvasHeight } = getCanvasDimensions();
 
         // 计算合适的缩放比例
@@ -76,7 +71,6 @@ export const ImageLayerRenderer: FC<LayerRendererProps> = ({
           y: (canvasHeight - scaledHeight) / 2,
         };
 
-        // 更新图层
         updateLayer(imageLayer.id, {
           transform: {
             ...imageLayer.transform,
@@ -92,7 +86,6 @@ export const ImageLayerRenderer: FC<LayerRendererProps> = ({
     }
   }, [imageLayer, imageSource, updateLayer]);
 
-  // 使用原始图片尺寸
   const originalWidth = imageSource.width();
   const originalHeight = imageSource.height();
 

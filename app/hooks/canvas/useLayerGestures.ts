@@ -22,7 +22,6 @@ export const useLayerGestures = ({
   onTransformEnd,
   onTransformChange,
 }: UseLayerGesturesProps) => {
-  // 共享值
   const scale = useSharedValue(initialTransform.scale);
   const savedScale = useSharedValue(initialTransform.scale);
   const position = useSharedValue(initialTransform.position);
@@ -30,7 +29,6 @@ export const useLayerGestures = ({
   const rotation = useSharedValue(initialTransform.rotation);
   const isActive = useSharedValue(false);
 
-  // 平移手势
   const dragGesture = Gesture.Pan()
     .enabled(enabled)
     .minPointers(1)
@@ -58,7 +56,6 @@ export const useLayerGestures = ({
         });
     });
 
-  // 缩放手势
   const pinchGesture = Gesture.Pinch()
     .enabled(enabled)
     .onStart(() => {
@@ -85,10 +82,8 @@ export const useLayerGestures = ({
         });
     });
 
-  // 组合手势
   const gesture = Gesture.Simultaneous(dragGesture, pinchGesture);
 
-  // 添加变换更新回调
   useEffect(() => {
     if (onTransformChange) {
       onTransformChange({

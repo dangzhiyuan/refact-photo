@@ -12,14 +12,12 @@ export const useCanvasGestures = ({
   enabled,
   onTransformEnd,
 }: UseCanvasGesturesProps) => {
-  // 共享值
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const offset = useSharedValue({ x: 0, y: 0 });
   const start = useSharedValue({ x: 0, y: 0 });
   const isActive = useSharedValue(false);
 
-  // 平移手势
   const panGesture = Gesture.Pan()
     .minPointers(1)
     .maxPointers(1)
@@ -40,7 +38,6 @@ export const useCanvasGestures = ({
       isActive.value = false;
     });
 
-  // 缩放手势
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
       "worklet";
@@ -60,7 +57,6 @@ export const useCanvasGestures = ({
       isActive.value = false;
     });
 
-  // 组合手势
   const gesture = Gesture.Simultaneous(
     Gesture.Pan()
       .enabled(enabled)
@@ -90,21 +86,5 @@ export const useCanvasGestures = ({
     scale,
     offset,
     isActive,
-  };
-};
-
-// 边界检查，显示手势范围，未实现
-const boundOffset = (
-  offset: { x: number; y: number },
-  scale: number
-): { x: number; y: number } => {
-  const maxOffset = {
-    x: ((scale - 1) * CANVAS_AREA.width) / 2,
-    y: ((scale - 1) * CANVAS_AREA.height) / 2,
-  };
-
-  return {
-    x: Math.min(Math.max(offset.x, -maxOffset.x), maxOffset.x),
-    y: Math.min(Math.max(offset.y, -maxOffset.y), maxOffset.y),
   };
 };

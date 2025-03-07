@@ -13,7 +13,6 @@ interface CanvasState {
   resetToDefaultSize: () => void;
 }
 
-// 初始值使用当前的画布尺寸
 const initialDimensions = getCanvasDimensions();
 
 export const useCanvasStore = create<CanvasState>((set) => ({
@@ -29,7 +28,6 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   resetToDefaultSize: () => set((state) => ({ size: state.defaultSize })),
 }));
 
-// 导出便捷函数
 export const setCanvasSize = (size: CanvasSize) => {
   useCanvasStore.getState().setCanvasSize(size);
 };
