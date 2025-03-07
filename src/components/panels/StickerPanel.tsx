@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -58,82 +58,99 @@ interface StickerPanelProps {
   setActiveCanvas?: (id: string) => void; // 接收 setActiveCanvas 作为 prop
 }
 
-export const StickerPanel: React.FC<StickerPanelProps> = ({
-  onClose,
-  setActiveCanvas,
-}) => {
-  const { addSticker } = useStickerManager();
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedSticker, setSelectedSticker] = useState<number | null>(null);
+export const StickerPanel: React.FC<StickerPanelProps> = React.memo(
+  ({ onClose, setActiveCanvas }) => {
+    const { addSticker } = useStickerManager();
+    const [isLoading, setIsLoading] = useState(false);
+    const [selectedSticker, setSelectedSticker] = useState<number | null>(null);
 
-  const handleAddSticker = async (sticker: StickerItem, index: number) => {
-    setSelectedSticker(index);
-    setIsLoading(true);
+    // 使用 useCallback 优化处理函数
+    const handleAddSticker = useCallback(
+      async (sticker: StickerItem, index: number) => {
+        // 避免重复点击同一个贴纸
+        if (isLoading || selectedSticker === index) {
+          return;
+        }
 
-    try {
-      // 添加贴纸到画布
-      const layerId = await addSticker(sticker);
-      console.log("添加贴纸成功，ID:", layerId);
+        setSelectedSticker(index);
+        setIsLoading(true);
 
-      // 重置加载状态
-      setIsLoading(false);
+        try {
+          // 添加贴纸到画布
+          const layerId = await addSticker(sticker);
+          console.log("添加贴纸成功，ID:", layerId);
 
-      // 如果提供了 setActiveCanvas 函数，自动选中新添加的贴纸图层
-      if (setActiveCanvas) {
-        setActiveCanvas(layerId);
-      }
-    } catch (error) {
-      console.error("添加贴纸失败:", error);
-      Alert.alert("添加贴纸失败", "请稍后再试或选择其他贴纸。", [
-        { text: "确定" },
-      ]);
-      setIsLoading(false);
-    }
-  };
+          // 如果提供了 setActiveCanvas 函数，自动选中新添加的贴纸图层
+          if (setActiveCanvas) {
+            setActiveCanvas(layerId);
+          }
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>贴纸</Text>
-        {onClose && (
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Icon name="close-outline" size={24} color={COLORS.text.primary} />
-          </TouchableOpacity>
-        )}
-      </View>
+          // 立即重置加载状态
+          setIsLoading(false);
+        } catch (error) {
+          console.error("添加贴纸失败:", error);
+          Alert.alert("添加贴纸失败", "请稍后再试或选择其他贴纸。", [
+            { text: "确定" },
+          ]);
+          setIsLoading(false);
+        }
+      },
+      [addSticker, isLoading, selectedSticker, setActiveCanvas]
+    );
 
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.accent} />
-          <Text style={styles.loadingText}>正在添加贴纸...</Text>
-        </View>
-      ) : (
-        <ScrollView
-          style={styles.scrollContainer}
-          contentContainerStyle={styles.stickerGrid}
+    // 记忆化渲染贴纸列表
+    const stickersList = useMemo(() => {
+      return SAMPLE_STICKERS.map((sticker, index) => (
+        <TouchableOpacity
+          key={index}
+          style={[
+            styles.stickerItem,
+            selectedSticker === index && styles.selectedStickerItem,
+          ]}
+          onPress={() => handleAddSticker(sticker, index)}
+          disabled={isLoading}
         >
-          {SAMPLE_STICKERS.map((sticker, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.stickerItem,
-                selectedSticker === index && styles.selectedStickerItem,
-              ]}
-              onPress={() => handleAddSticker(sticker, index)}
-              disabled={isLoading}
-            >
-              <Image
-                source={{ uri: sticker.uri }}
-                style={styles.stickerImage}
-                resizeMode="contain"
+          <Image
+            source={{ uri: sticker.uri }}
+            style={styles.stickerImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      ));
+    }, [handleAddSticker, selectedSticker, isLoading]);
+
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>贴纸</Text>
+          {onClose && (
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <Icon
+                name="close-outline"
+                size={24}
+                color={COLORS.text.primary}
               />
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      )}
-    </View>
-  );
-};
+          )}
+        </View>
+
+        {isLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.accent} />
+            <Text style={styles.loadingText}>正在添加贴纸...</Text>
+          </View>
+        ) : (
+          <ScrollView
+            style={styles.scrollContainer}
+            contentContainerStyle={styles.stickerGrid}
+          >
+            {stickersList}
+          </ScrollView>
+        )}
+      </View>
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   container: {

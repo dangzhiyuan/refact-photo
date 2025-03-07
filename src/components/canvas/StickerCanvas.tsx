@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import {
   StyleSheet,
   View,
@@ -62,7 +62,27 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
   const offset = useSharedValue({ x: 0, y: 0 });
   const start = useSharedValue({ x: 0, y: 0 });
 
-  // 创建动画样式
+  // 优化触摸事件处理
+  const handlePress = useCallback(() => {
+    if (onSelect) {
+      // 使用 requestAnimationFrame 确保在UI线程空闲时执行
+      requestAnimationFrame(() => {
+        onSelect(layerId);
+      });
+    }
+  }, [layerId, onSelect]);
+
+  // 优化贴纸删除事件处理
+  const handleDelete = useCallback(() => {
+    if (onDelete) {
+      // 使用 requestAnimationFrame 确保在UI线程空闲时执行
+      requestAnimationFrame(() => {
+        onDelete(layerId);
+      });
+    }
+  }, [layerId, onDelete]);
+
+  // 使用 useMemo 缓存贴纸变换样式，避免不必要的重新计算
   const animatedStyle = useAnimatedStyle(() => {
     if (!layer) {
       return {
@@ -75,8 +95,8 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
 
     return {
       position: "absolute",
-      width: layer.width,
-      height: layer.height,
+      width: layer?.width || 0,
+      height: layer?.height || 0,
       transform: [
         { translateX: offset.value.x },
         { translateY: offset.value.y },
@@ -101,20 +121,6 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
           rotation: rotation.value,
         },
       });
-    }
-  };
-
-  // 处理点击事件，选中当前贴纸
-  const handlePress = () => {
-    onSelect && onSelect(layerId);
-  };
-
-  // 处理删除贴纸
-  const handleDelete = () => {
-    if (onDelete) {
-      onDelete(layerId);
-    } else if (deleteLayer) {
-      deleteLayer(layerId);
     }
   };
 

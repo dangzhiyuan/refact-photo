@@ -75,10 +75,17 @@ export const Editor: React.FC = () => {
     (tool: ToolType) => {
       // 特殊处理贴纸工具，防止闪烁
       if (tool === EditorMode.STICKER) {
-        setActiveTool(tool);
-        setMode(tool as EditorMode);
-        // 确保面板始终可见
-        setIsPanelVisible(true);
+        // 如果已经是贴纸工具，只切换面板可见性
+        if (tool === activeTool) {
+          setIsPanelVisible(!isPanelVisible);
+        } else {
+          setActiveTool(tool);
+          setMode(tool as EditorMode);
+          // 只有在面板不可见时才设置为可见
+          if (!isPanelVisible) {
+            setIsPanelVisible(true);
+          }
+        }
         return;
       }
 
@@ -96,6 +103,22 @@ export const Editor: React.FC = () => {
     [activeTool, isPanelVisible, setMode]
   );
 
+  // 使用 React.memo 优化 StickerPanel 的渲染
+  const MemoizedStickerPanel = React.memo(
+    ({
+      onClose,
+      setActiveCanvas,
+    }: {
+      onClose?: () => void;
+      setActiveCanvas?: (id: string) => void;
+    }) => {
+      return (
+        <StickerPanel onClose={onClose} setActiveCanvas={setActiveCanvas} />
+      );
+    }
+  );
+
+  // 在 renderToolPanel 函数中使用 MemoizedStickerPanel
   const renderToolPanel = useCallback(() => {
     if (!isPanelVisible) return null;
     const handlePanelClose = () => setIsPanelVisible(false);
@@ -116,7 +139,7 @@ export const Editor: React.FC = () => {
         />
       ),
       [EditorMode.STICKER]: (
-        <StickerPanel
+        <MemoizedStickerPanel
           onClose={handlePanelClose}
           setActiveCanvas={setActiveCanvas}
         />
@@ -210,15 +233,27 @@ export const Editor: React.FC = () => {
   // 贴纸操作处理函数
   const handleStickerDelete = useCallback(
     (layerId: string) => {
-      // 删除贴纸前，如果它是当前选中的，先切换到基础图层
-      if (activeCanvas === layerId) {
-        setActiveCanvas("base");
-      }
+      try {
+        console.log("删除贴纸:", layerId);
 
-      // 调用删除函数
-      const { deleteLayer } = useCanvasStore.getState();
-      if (deleteLayer) {
-        deleteLayer(layerId);
+        // 1. 先切换选中的图层（如果当前选中的是要删除的贴纸）
+        if (activeCanvas === layerId) {
+          setActiveCanvas("base");
+        }
+
+        // 2. 调用 canvasStore 的删除方法
+        const { deleteLayer } = useCanvasStore.getState();
+        if (deleteLayer) {
+          // 执行删除操作
+          deleteLayer(layerId);
+          console.log("贴纸已删除");
+        } else {
+          console.error("删除贴纸失败: deleteLayer 方法不存在");
+        }
+
+        // 3. 可以在这里添加其他清理工作，如清除相关缓存等
+      } catch (error) {
+        console.error("删除贴纸时发生错误:", error);
       }
     },
     [activeCanvas, setActiveCanvas]
@@ -227,7 +262,7 @@ export const Editor: React.FC = () => {
   // 贴纸选择处理函数
   const handleStickerSelect = useCallback(
     (layerId: string) => {
-      // 直接切换到该贴纸图层
+      // 切换到该贴纸图层，但不影响面板显示状态
       setActiveCanvas(layerId);
     },
     [setActiveCanvas]
