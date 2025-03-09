@@ -11,8 +11,6 @@ import {
 import { Icon } from "./common/Icon";
 import { CanvasManager } from "./CanvasManager";
 import { FilterPanel } from "./panels/FilterPanel";
-import { DrawingPanel } from "./panels/DrawingPanel";
-import { TextPanel } from "./panels/TextPanel";
 import { AdjustmentPanel } from "./panels/AdjustmentPanel";
 import { useEditorStore } from "../store/editorStore";
 import { EditorMode } from "../core/types/canvas";
@@ -47,16 +45,13 @@ export const Editor: React.FC = () => {
     height: SCREEN_HEIGHT - 40,
   });
 
-  // 从 canvasStore 获取贴纸图层信息
   const { layers, layerIds } = useCanvasStore();
 
-  // 过滤出贴纸类型的图层
   const stickerLayers = layerIds.filter(
     (id) => layers[id] && layers[id].type === LayerType.STICKER
   );
 
   const handleCanvasSizeChange = useCallback((size: CanvasSize) => {
-    console.log("Canvas size changed:", size);
     if (size.width > 0 && size.height > 0) {
       setImageDimensions(size);
     }
@@ -67,21 +62,17 @@ export const Editor: React.FC = () => {
   }, [navigation]);
 
   const handleSave = useCallback(() => {
-    console.log("保存图片");
-    // TODO: 实现实际的保存功能
+    // 实际保存图片功能需要在此实现
   }, []);
 
   const handleToolChange = useCallback(
     (tool: ToolType) => {
-      // 特殊处理贴纸工具，防止闪烁
       if (tool === EditorMode.STICKER) {
-        // 如果已经是贴纸工具，只切换面板可见性
         if (tool === activeTool) {
           setIsPanelVisible(!isPanelVisible);
         } else {
           setActiveTool(tool);
           setMode(tool as EditorMode);
-          // 只有在面板不可见时才设置为可见
           if (!isPanelVisible) {
             setIsPanelVisible(true);
           }
@@ -89,7 +80,6 @@ export const Editor: React.FC = () => {
         return;
       }
 
-      // 其他工具的处理
       if (tool === activeTool) {
         setIsPanelVisible(!isPanelVisible);
       } else {
@@ -103,7 +93,6 @@ export const Editor: React.FC = () => {
     [activeTool, isPanelVisible, setMode]
   );
 
-  // 使用 React.memo 优化 StickerPanel 的渲染
   const MemoizedStickerPanel = React.memo(
     ({
       onClose,
@@ -118,7 +107,6 @@ export const Editor: React.FC = () => {
     }
   );
 
-  // 在 renderToolPanel 函数中使用 MemoizedStickerPanel
   const renderToolPanel = useCallback(() => {
     if (!isPanelVisible) return null;
     const handlePanelClose = () => setIsPanelVisible(false);
@@ -126,8 +114,6 @@ export const Editor: React.FC = () => {
       [EditorMode.FILTER]: (
         <FilterPanel onIntensityToggle={() => {}} onClose={handlePanelClose} />
       ),
-      [EditorMode.DRAW]: <DrawingPanel onClose={handlePanelClose} />,
-      [EditorMode.TEXT]: <TextPanel onClose={handlePanelClose} />,
       [EditorMode.EDIT]: <AdjustmentPanel onClose={handlePanelClose} />,
       [EditorMode.LAYER]: (
         <LayerPanel
@@ -153,7 +139,7 @@ export const Editor: React.FC = () => {
     visibleLayers,
     toggleLayerVisibility,
   ]);
-
+  
   const viewportConfig = {
     backgroundColor: COLORS.canvasBackground,
     borderRadius: 15,
@@ -171,17 +157,12 @@ export const Editor: React.FC = () => {
     },
   };
 
-  // 快速图层选择器组件
   const QuickLayerSelector: React.FC = () => {
-    // 静态图层
     const staticLayers = [
       { id: "base", name: "基础图像", icon: "image-outline" },
-      { id: "drawing", name: "画布1", icon: "brush-outline" },
-      { id: "content", name: "画布2", icon: "text-outline" },
-      { id: "control", name: "画布3", icon: "settings-outline" },
+      { id: "content", name: "圆形画布", icon: "ellipse-outline" },
     ];
 
-    // 合并静态图层和贴纸图层
     const stickerLayerItems = stickerLayers.map((id) => ({
       id,
       name: `贴纸 ${id.substring(id.length > 5 ? id.length - 5 : 0)}`,
@@ -209,7 +190,7 @@ export const Editor: React.FC = () => {
                 color={
                   activeCanvas === layer.id
                     ? COLORS.accent
-                    : COLORS.icon.inactive
+                    : COLORS.text.secondary
                 }
               />
               <Text
@@ -230,39 +211,25 @@ export const Editor: React.FC = () => {
     );
   };
 
-  // 贴纸操作处理函数
-  const handleStickerDelete = useCallback(
+  const handleRemoveSticker = useCallback(
     (layerId: string) => {
       try {
-        console.log("删除贴纸:", layerId);
-
-        // 1. 先切换选中的图层（如果当前选中的是要删除的贴纸）
         if (activeCanvas === layerId) {
           setActiveCanvas("base");
         }
-
-        // 2. 调用 canvasStore 的删除方法
+        
         const { deleteLayer } = useCanvasStore.getState();
-        if (deleteLayer) {
-          // 执行删除操作
-          deleteLayer(layerId);
-          console.log("贴纸已删除");
-        } else {
-          console.error("删除贴纸失败: deleteLayer 方法不存在");
-        }
-
-        // 3. 可以在这里添加其他清理工作，如清除相关缓存等
+        deleteLayer(layerId);
+        
       } catch (error) {
-        console.error("删除贴纸时发生错误:", error);
+        // 处理错误
       }
     },
     [activeCanvas, setActiveCanvas]
   );
 
-  // 贴纸选择处理函数
   const handleStickerSelect = useCallback(
     (layerId: string) => {
-      // 切换到该贴纸图层，但不影响面板显示状态
       setActiveCanvas(layerId);
     },
     [setActiveCanvas]
@@ -270,7 +237,6 @@ export const Editor: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 顶部工具栏 */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={handleClose}>
           <Icon name="close" size={24} color={COLORS.text.primary} />
@@ -281,10 +247,8 @@ export const Editor: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* 快速图层选择器 */}
       <QuickLayerSelector />
 
-      {/* 画布视窗 */}
       <View
         style={{
           alignSelf: "center",
@@ -303,7 +267,6 @@ export const Editor: React.FC = () => {
         />
       </View>
 
-      {/* 底部工具区域 */}
       <View style={[styles.toolsSection, { flex: 1 }]}>
         <Toolbar
           activeCanvas={activeCanvas}
@@ -354,26 +317,12 @@ const styles = StyleSheet.create({
   },
   panelContainer: {
     flex: 1,
-  },
-  quickLayerSelector: {
-    flexDirection: "row",
-    padding: 10,
-  },
-  layerButton: {
-    padding: 10,
-  },
-  activeLayerButton: {
-    backgroundColor: COLORS.accent,
-  },
-  layerButtonText: {
-    marginTop: 5,
-  },
-  activeLayerButtonText: {
-    fontWeight: "bold",
+    borderTopWidth: 1,
+    borderTopColor: COLORS.divider,
   },
 });
 
-// 添加图层选择器样式
+// 图层选择器样式
 const layerSelectorStyles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.panelBackground,

@@ -228,9 +228,9 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
           rotation={rotation}
           scale={scale}
           onDelete={handleDelete}
-          onRotate={() => console.log("旋转")}
-          onResize={() => console.log("缩放")}
-          onEdit={() => console.log("编辑")}
+          onRotate={() => {}}
+          onResize={() => {}}
+          onEdit={() => {}}
         />
       )}
     </View>

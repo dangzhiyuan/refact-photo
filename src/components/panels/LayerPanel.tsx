@@ -38,9 +38,7 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
   // 获取固定的画布选项
   const staticCanvasOptions: LayerOption[] = [
     { id: "base", name: "基础图像", icon: "image-outline" },
-    { id: "drawing", name: "画布1", icon: "brush-outline" },
-    { id: "content", name: "画布2", icon: "text-outline" },
-    { id: "control", name: "画布3", icon: "settings-outline" },
+    { id: "content", name: "圆形画布", icon: "ellipse-outline" },
   ];
 
   // 从 canvasStore 获取贴纸图层

@@ -17,16 +17,21 @@ const CANVAS_HEIGHT = CIRCLE_CONFIG.y + CIRCLE_CONFIG.radius * 2;
 
 interface ContentCanvasProps {
   initialScale?: number;
+  isActive?: boolean;
+  onDragStart?: () => void;
 }
 
 export const ContentCanvas: React.FC<ContentCanvasProps> = ({
   initialScale = 1,
+  isActive = false,
+  onDragStart,
 }) => {
-  const { gesture, scale, offset, isActive } = useCanvasGestures({
+  const { gesture, scale, offset, isActive: gestureActive } = useCanvasGestures({
     contentWidth: CANVAS_WIDTH,
     contentHeight: CANVAS_HEIGHT,
     initialScale: initialScale,
     autoFit: true,
+    onDragStart,
   });
 
   const animatedStyle = useAnimatedStyle(() => ({

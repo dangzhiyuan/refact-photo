@@ -2,7 +2,7 @@ import { useState } from "react";
 
 export type LayerVisibility = Record<string, boolean>;
 
-export const DEFAULT_LAYERS = ["base", "drawing", "content", "control"];
+export const DEFAULT_LAYERS = ["base", "content"];
 
 interface UseLayerVisibilityReturn {
   visibleLayers: LayerVisibility;
@@ -21,9 +21,7 @@ export function useLayerVisibility(
 ): UseLayerVisibilityReturn {
   const defaultState: LayerVisibility = initialState || {
     base: true,
-    drawing: true,
     content: true,
-    control: true,
   };
 
   const [visibleLayers, setVisibleLayers] =

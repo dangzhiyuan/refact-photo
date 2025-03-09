@@ -20,6 +20,7 @@ interface UseCanvasGesturesProps {
   viewportWidth?: number;
   viewportHeight?: number;
   hitTestEnabled?: boolean;
+  onDragStart?: () => void;
 }
 
 export const useCanvasGestures = ({
@@ -32,6 +33,7 @@ export const useCanvasGestures = ({
   viewportWidth = SCREEN_WIDTH - 40,
   viewportHeight = SCREEN_HEIGHT * 0.55,
   hitTestEnabled = true,
+  onDragStart,
 }: UseCanvasGesturesProps = {}) => {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
@@ -81,6 +83,10 @@ export const useCanvasGestures = ({
       "worklet";
       start.value = { ...offset.value };
       isActive.value = true;
+      
+      if (onDragStart) {
+        runOnJS(onDragStart)();
+      }
     })
     .onUpdate((e) => {
       "worklet";
@@ -105,13 +111,13 @@ export const useCanvasGestures = ({
     .onUpdate((e) => {
       "worklet";
       try {
-        const newScale = savedScale.value * e.scale;
-        scale.value = Math.min(
-          Math.max(newScale, SCALE_LIMITS.min),
-          SCALE_LIMITS.max
+        const newScale = Math.max(
+          SCALE_LIMITS.min,
+          Math.min(SCALE_LIMITS.max, savedScale.value * e.scale)
         );
+        scale.value = newScale;
       } catch (error) {
-        console.log("缩放错误", error);
+        // 错误处理（无需日志输出）
       }
     })
     .onEnd(() => {
