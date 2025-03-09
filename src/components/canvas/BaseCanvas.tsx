@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { StyleSheet, Dimensions, View, Text, TouchableOpacity } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { StyleSheet, Dimensions, View, Text, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useCanvasGestures } from "../../hooks/useCanvasGestures";
@@ -19,6 +19,7 @@ interface BaseCanvasProps {
   onSizeChange?: (size: { width: number; height: number }) => void;
   isActive?: boolean;
   onDragStart?: () => void;
+  onSelect?: () => void;
 }
 
 export const BaseCanvas: React.FC<BaseCanvasProps> = ({
@@ -26,6 +27,7 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
   onSizeChange,
   isActive = false,
   onDragStart,
+  onSelect,
 }) => {
   const { image, isLoading, hasError, errorMessage, debug } = useImageLoader(DEFAULT_IMAGE_URL);
   const setBaseImageUri = useEditorStore((state) => state.setBaseImageUri);
@@ -39,6 +41,14 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
     width: 0,
     height: 0,
   });
+
+  const handlePress = useCallback(() => {
+    if (onSelect) {
+      requestAnimationFrame(() => {
+        onSelect();
+      });
+    }
+  }, [onSelect]);
 
   useEffect(() => {
     if (image) {
@@ -58,9 +68,7 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
         if (onSizeChange) {
           onSizeChange(calculatedSize);
         }
-      } catch (error) {
-        // 无需输出错误
-      }
+      } catch (error) {}
     }
   }, [image, onSizeChange, viewportSize.width, viewportSize.height]);
 
@@ -105,16 +113,24 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
 
   return (
     <View style={styles.container}>
-      <GestureDetector gesture={gesture}>
-        <Animated.View style={[styles.canvasContainer, containerStyle]}>
-          <CanvasImage
-            image={image}
-            width={canvasSize.width}
-            height={canvasSize.height}
-            style={{ backgroundColor: "rgba(0, 0, 255, 0.1)" }}
-          />
-        </Animated.View>
-      </GestureDetector>
+      <TouchableWithoutFeedback onPress={handlePress}>
+        <View style={StyleSheet.absoluteFill}>
+          <GestureDetector gesture={gesture}>
+            <Animated.View style={[styles.canvasContainer, containerStyle]}>
+              <CanvasImage
+                image={image}
+                width={canvasSize.width}
+                height={canvasSize.height}
+                style={{}}
+              />
+              
+              {isActive && (
+                <View style={styles.activeIndicator} />
+              )}
+            </Animated.View>
+          </GestureDetector>
+        </View>
+      </TouchableWithoutFeedback>
     </View>
   );
 };
@@ -237,5 +253,15 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
     fontWeight: "600",
-  }
+  },
+  activeIndicator: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderWidth: 2,
+    borderColor: 'rgba(0, 0, 255, 0.5)',
+    borderRadius: 4,
+  },
 });

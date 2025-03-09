@@ -30,6 +30,12 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
     (id) => layers[id] && layers[id].type === LayerType.STICKER
   );
 
+  const handleCanvasSelect = (canvasId: string) => {
+    if (canvasId !== activeCanvas) {
+      setActiveCanvas(canvasId);
+    }
+  };
+
   const handleCanvasDragStart = (canvasId: string) => {
     if (canvasId !== activeCanvas) {
       setActiveCanvas(canvasId);
@@ -44,15 +50,14 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
           { opacity: visibleLayers.base ? 1 : 0 },
           { zIndex: 1 }
         ]}
-        pointerEvents={
-          activeCanvas === "base" && visibleLayers.base ? "auto" : "none"
-        }
+        pointerEvents={visibleLayers.base ? "auto" : "none"}
       >
         <BaseCanvas
           initialScale={initialScale}
           onSizeChange={onCanvasSizeChange}
           isActive={activeCanvas === "base"}
           onDragStart={() => handleCanvasDragStart("base")}
+          onSelect={() => handleCanvasSelect("base")}
         />
       </View>
 
@@ -62,14 +67,13 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
           { opacity: visibleLayers.content ? 1 : 0 },
           { zIndex: 2 }
         ]}
-        pointerEvents={
-          activeCanvas === "content" && visibleLayers.content ? "auto" : "none"
-        }
+        pointerEvents={visibleLayers.content ? "auto" : "none"}
       >
         <ContentCanvas 
           initialScale={initialScale} 
           isActive={activeCanvas === "content"}
           onDragStart={() => handleCanvasDragStart("content")}
+          onSelect={() => handleCanvasSelect("content")}
         />
       </View>
 
