@@ -58,6 +58,10 @@ export const Editor: React.FC = () => {
   }, []);
 
   const handleClose = useCallback(() => {
+    // 退出前重置所有图层数据
+    const { resetLayers } = useCanvasStore.getState();
+    resetLayers();
+    
     navigation.goBack();
   }, [navigation]);
 

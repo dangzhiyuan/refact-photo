@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { useEditorStore } from "../store/editorStore";
+import { useCanvasStore } from "../store/canvasStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useImageManager } from "../hooks/useImageManager";
 
@@ -38,6 +39,10 @@ export const ImagePickerScreen: React.FC<ImagePickerScreenProps> = ({
 
   const handleStartEditing = () => {
     if (baseImageUri) {
+      // 进入编辑页面前，重置所有图层数据，确保是全新的编辑状态
+      const { resetLayers } = useCanvasStore.getState();
+      resetLayers();
+      
       navigation.navigate("Editor");
     } else {
       Alert.alert("提示", "请先选择一张图片");

@@ -31,6 +31,9 @@ interface CanvasState {
   // 视口操作
   updateViewport: (updates: Partial<CanvasState["viewport"]>) => void;
   resetViewport: () => void;
+  
+  // 重置所有图层
+  resetLayers: () => void;
 }
 
 const DEFAULT_VIEWPORT = {
@@ -39,13 +42,18 @@ const DEFAULT_VIEWPORT = {
   size: { width: 0, height: 0 },
 };
 
-export const useCanvasStore = create<CanvasState>((set, get) => ({
-  // 初始状态
+// 初始状态
+const initialState = {
   layers: {},
   layerIds: [],
   selectedLayerId: null,
   activeCanvas: CanvasType.BASE,
   viewport: DEFAULT_VIEWPORT,
+};
+
+export const useCanvasStore = create<CanvasState>((set, get) => ({
+  // 初始状态
+  ...initialState,
 
   // 图层操作
   addLayer: (layerData) => {
@@ -150,5 +158,15 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   resetViewport: () => {
     set({ viewport: DEFAULT_VIEWPORT });
+  },
+  
+  // 重置所有图层数据
+  resetLayers: () => {
+    set({
+      layers: {},
+      layerIds: [],
+      selectedLayerId: null,
+      activeCanvas: CanvasType.BASE,
+    });
   },
 }));
