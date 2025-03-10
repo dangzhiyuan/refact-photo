@@ -1,5 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
-import { StyleSheet, Dimensions, View, Text, TouchableOpacity, TouchableWithoutFeedback } from "react-native";
+import {
+  StyleSheet,
+  Dimensions,
+  View,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+} from "react-native";
 import { GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useCanvasGestures } from "../../hooks/useCanvasGestures";
@@ -12,7 +19,7 @@ import { useEditorStore } from "../../store/editorStore";
 const DEFAULT_IMAGE_URL = "https://example.com/default.jpg";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const VIEWPORT_HEIGHT = SCREEN_HEIGHT * 0.4;
+const VIEWPORT_HEIGHT = SCREEN_HEIGHT * 0.5;
 
 interface BaseCanvasProps {
   initialScale?: number;
@@ -29,11 +36,12 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
   onDragStart,
   onSelect,
 }) => {
-  const { image, isLoading, hasError, errorMessage, debug } = useImageLoader(DEFAULT_IMAGE_URL);
+  const { image, isLoading, hasError, errorMessage, debug } =
+    useImageLoader(DEFAULT_IMAGE_URL);
   const setBaseImageUri = useEditorStore((state) => state.setBaseImageUri);
 
   const viewportSize = {
-    width: SCREEN_WIDTH - 40,
+    width: SCREEN_WIDTH - 20,
     height: VIEWPORT_HEIGHT,
   };
 
@@ -79,7 +87,7 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
     autoFit: true,
     viewportWidth: viewportSize.width,
     viewportHeight: viewportSize.height,
-    onDragStart
+    onDragStart,
   });
 
   const containerStyle = useAnimatedStyle(() => ({
@@ -95,17 +103,26 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
   };
 
   if (isLoading) {
-    return <LoadingState attempts={debug?.loadAttempts || 0} format={debug?.format || 'unknown'} />;
+    return (
+      <LoadingState
+        attempts={debug?.loadAttempts || 0}
+        format={debug?.format || "unknown"}
+      />
+    );
   }
 
   if (hasError || !image) {
     return (
-      <ErrorState 
-        uri={debug?.uri || ''} 
-        isFileUri={debug?.isFileUri || false} 
-        format={debug?.format || 'unknown'}
-        dimensions={debug?.dimensions ? `${debug.dimensions.width}×${debug.dimensions.height}` : '未知'}
-        errorMessage={errorMessage || '未知错误'} 
+      <ErrorState
+        uri={debug?.uri || ""}
+        isFileUri={debug?.isFileUri || false}
+        format={debug?.format || "unknown"}
+        dimensions={
+          debug?.dimensions
+            ? `${debug.dimensions.width}×${debug.dimensions.height}`
+            : "未知"
+        }
+        errorMessage={errorMessage || "未知错误"}
         onRetry={handleChooseAnotherImage}
       />
     );
@@ -123,10 +140,8 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
                 height={canvasSize.height}
                 style={{}}
               />
-              
-              {isActive && (
-                <View style={styles.activeIndicator} />
-              )}
+
+              {isActive && <View style={styles.activeIndicator} />}
             </Animated.View>
           </GestureDetector>
         </View>
@@ -144,9 +159,7 @@ const LoadingState: React.FC<LoadingStateProps> = ({ attempts, format }) => (
   <View style={styles.container}>
     <Text style={styles.loadingText}>加载图像中...</Text>
     <Text style={styles.loadingSubText}>
-      {attempts > 0 
-        ? `正在尝试 (${attempts}/3)...`
-        : '请稍等片刻...'}
+      {attempts > 0 ? `正在尝试 (${attempts}/3)...` : "请稍等片刻..."}
     </Text>
     <Text style={styles.infoText}>图像格式: {format}</Text>
   </View>
@@ -161,32 +174,27 @@ interface ErrorStateProps {
   onRetry: () => void;
 }
 
-const ErrorState: React.FC<ErrorStateProps> = ({ 
-  uri, 
-  isFileUri, 
+const ErrorState: React.FC<ErrorStateProps> = ({
+  uri,
+  isFileUri,
   format,
   dimensions,
-  errorMessage, 
-  onRetry
+  errorMessage,
+  onRetry,
 }) => (
   <View style={styles.container}>
     <Text style={styles.errorText}>无法加载图像</Text>
     <Text style={styles.errorSubText}>
-      {isFileUri 
-        ? '本地图像加载失败' 
-        : '网络图像加载失败'}
+      {isFileUri ? "本地图像加载失败" : "网络图像加载失败"}
     </Text>
-    
+
     <View style={styles.infoContainer}>
       <Text style={styles.infoText}>格式: {format}</Text>
       <Text style={styles.infoText}>尺寸: {dimensions}</Text>
       <Text style={styles.infoText}>错误: {errorMessage}</Text>
     </View>
-    
-    <TouchableOpacity 
-      style={styles.retryButton}
-      onPress={onRetry}
-    >
+
+    <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
       <Text style={styles.retryButtonText}>返回选择其他图像</Text>
     </TouchableOpacity>
   </View>
@@ -217,12 +225,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   infoContainer: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: "rgba(0,0,0,0.05)",
     padding: 10,
     borderRadius: 8,
     marginBottom: 16,
-    width: '90%',
-    alignItems: 'flex-start',
+    width: "90%",
+    alignItems: "flex-start",
   },
   infoText: {
     color: COLORS.text.secondary,
@@ -246,8 +254,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    alignItems: 'center',
-    width: '90%',
+    alignItems: "center",
+    width: "90%",
   },
   retryButtonText: {
     color: "#fff",
@@ -255,13 +263,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   activeIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     borderWidth: 2,
-    borderColor: 'rgba(0, 0, 255, 0.5)',
+    borderColor: "rgba(0, 0, 255, 0.5)",
     borderRadius: 4,
   },
 });

@@ -31,7 +31,7 @@ interface CanvasViewportProps {
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const VIEWPORT_HEIGHT = SCREEN_HEIGHT * 0.4;
+const VIEWPORT_HEIGHT = SCREEN_HEIGHT * 0.5;
 
 const BorderDecorator = () => (
   <>
@@ -70,7 +70,13 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   };
 
   return (
-    <View style={[viewportStyle, shadowProps, { elevation: elevation || 0, width: "100%", height: "100%" }]}>
+    <View
+      style={[
+        viewportStyle,
+        shadowProps,
+        { elevation: elevation || 0, width: "100%", height: "100%" },
+      ]}
+    >
       {useGradient && gradientColors ? (
         <LinearGradient colors={gradientColors} style={styles.gradient}>
           <View style={styles.canvasContainer}>

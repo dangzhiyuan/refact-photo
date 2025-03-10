@@ -41,8 +41,8 @@ export const Editor: React.FC = () => {
   const navigation = useNavigation();
   const { visibleLayers, toggleLayerVisibility } = useLayerVisibility();
   const [imageDimensions, setImageDimensions] = useState({
-    width: SCREEN_WIDTH - 40,
-    height: SCREEN_HEIGHT - 40,
+    width: SCREEN_WIDTH - 20,
+    height: SCREEN_HEIGHT * 0.6,
   });
 
   const { layers, layerIds } = useCanvasStore();
@@ -61,7 +61,7 @@ export const Editor: React.FC = () => {
     // 退出前重置所有图层数据
     const { resetLayers } = useCanvasStore.getState();
     resetLayers();
-    
+
     navigation.goBack();
   }, [navigation]);
 
@@ -143,15 +143,15 @@ export const Editor: React.FC = () => {
     visibleLayers,
     toggleLayerVisibility,
   ]);
-  
+
   const viewportConfig = {
     backgroundColor: COLORS.canvasBackground,
     borderRadius: 15,
     useGradient: true,
     paddingHorizontal: 0,
     paddingVertical: 0,
-    initialScale: 0.8,
-    fitScale: 0.85,
+    initialScale: 0.95,
+    fitScale: 0.95,
     borderStyle: "corners" as const,
     shadowProps: {
       shadowColor: "#000",
@@ -221,10 +221,9 @@ export const Editor: React.FC = () => {
         if (activeCanvas === layerId) {
           setActiveCanvas("base");
         }
-        
+
         const { deleteLayer } = useCanvasStore.getState();
         deleteLayer(layerId);
-        
       } catch (error) {
         // 处理错误
       }
@@ -253,22 +252,39 @@ export const Editor: React.FC = () => {
 
       <QuickLayerSelector />
 
+      {/* 外层View占据屏幕总高度50%的区域 */}
       <View
         style={{
-          alignSelf: "center",
-          alignItems: "center",
+          height: "50%",
+          width: "100%",
           justifyContent: "center",
-          width: imageDimensions.width,
-          height: imageDimensions.height,
+          alignItems: "center",
+          borderWidth: 1,
+          borderColor: "rgba(0, 0, 0, 0.2)",
+          overflow: "hidden",
         }}
       >
-        <CanvasViewport
-          activeCanvas={activeCanvas}
-          setActiveCanvas={setActiveCanvas}
-          visibleLayers={visibleLayers}
-          onCanvasSizeChange={handleCanvasSizeChange}
-          {...viewportConfig}
-        />
+        {/* 可编辑区域，内部大小与图片相同 */}
+        <View
+          style={{
+            width: imageDimensions.width,
+            height: imageDimensions.height,
+            justifyContent: "center",
+            alignItems: "center",
+            position: "relative",
+            borderWidth: 1,
+            borderColor: "rgba(0, 255, 0, 0.2)",
+          }}
+        >
+          {/* 渲染画布管理器 */}
+          <CanvasViewport
+            activeCanvas={activeCanvas}
+            setActiveCanvas={setActiveCanvas}
+            visibleLayers={visibleLayers}
+            onCanvasSizeChange={handleCanvasSizeChange}
+            {...viewportConfig}
+          />
+        </View>
       </View>
 
       <View style={[styles.toolsSection, { flex: 1 }]}>

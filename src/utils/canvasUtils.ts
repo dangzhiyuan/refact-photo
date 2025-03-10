@@ -3,7 +3,7 @@ export function calculateFitSize(
   imageHeight: number,
   containerWidth: number,
   containerHeight: number,
-  scaleFactor = 0.85
+  scaleFactor = 0.95
 ) {
   const imageRatio = imageWidth / imageHeight;
   const containerRatio = containerWidth / containerHeight;

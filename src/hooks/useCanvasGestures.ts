@@ -52,12 +52,15 @@ export const useCanvasGestures = ({
       let fitScale = 1;
       const horizontalScale = viewportWidth / contentWidth;
       const verticalScale = viewportHeight / contentHeight;
+
       fitScale = Math.min(horizontalScale, verticalScale) * 0.85;
 
       scale.value = fitScale;
       savedScale.value = fitScale;
+
       const centerX = (viewportWidth - contentWidth * fitScale) / 2;
       const centerY = (viewportHeight - contentHeight * fitScale) / 2;
+
       offset.value = {
         x: centerX,
         y: centerY,
@@ -83,7 +86,7 @@ export const useCanvasGestures = ({
       "worklet";
       start.value = { ...offset.value };
       isActive.value = true;
-      
+
       if (onDragStart) {
         runOnJS(onDragStart)();
       }
