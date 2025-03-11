@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   ScrollView,
 } from "react-native";
+import { useDrawingStore } from "../../store/drawingStore";
+import { BrushType } from "../../core/types/canvas";
 import { Icon } from "../common/Icon";
-import { ComponentProps } from "react";
 import { COLORS } from "../../theme/colors";
 import Slider from "@react-native-community/slider";
 
@@ -15,259 +16,302 @@ interface DrawingPanelProps {
   onClose?: () => void;
 }
 
+const BRUSH_TYPES = [
+  { type: BrushType.NORMAL, icon: "brush", label: "画笔" },
+  { type: BrushType.SOFT, icon: "brush-outline", label: "柔和" },
+  { type: BrushType.NEON, icon: "flash", label: "霓虹" },
+  { type: BrushType.MOSAIC, icon: "grid", label: "马赛克" },
+  { type: BrushType.BLUR, icon: "water", label: "模糊" },
+  { type: BrushType.ERASER, icon: "trash", label: "橡皮" },
+];
+
+const DEFAULT_COLORS = [
+  "#000000",
+  "#FFFFFF",
+  "#FF0000",
+  "#00FF00",
+  "#0000FF",
+  "#FFFF00",
+  "#FF00FF",
+  "#00FFFF",
+];
+
 export const DrawingPanel: React.FC<DrawingPanelProps> = ({ onClose }) => {
-  const [selectedTool, setSelectedTool] = useState("brush");
-  const [selectedColor, setSelectedColor] = useState("#FF6B95");
-  const [brushSize, setBrushSize] = useState(5);
+  const {
+    currentBrush,
+    recentColors,
+    setBrushType,
+    setBrushColor,
+    setBrushWidth,
+    setBrushOpacity,
+    setBrushSettings,
+    undo,
+    redo,
+    clear,
+  } = useDrawingStore();
 
-  const drawingTools = [
-    { id: "brush", name: "画笔", icon: "brush-outline" },
-    { id: "pen", name: "马克笔", icon: "pencil-outline" },
-    { id: "eraser", name: "橡皮擦", icon: "trash-outline" },
-  ];
+  const handleBrushTypePress = (type: BrushType) => {
+    setBrushType(type);
+  };
 
-  const colorOptions = [
-    "#FF6B95",
-    "#3478F6",
-    "#4CD964",
-    "#FFCC00",
-    "#FF3B30",
-    "#5856D6",
-    "#000000",
-    "#FFFFFF",
-  ];
+  const handleColorPress = (color: string) => {
+    setBrushColor(color);
+  };
+
+  const renderBrushTypeButtons = () => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      style={styles.brushTypesContainer}
+    >
+      {BRUSH_TYPES.map((brush) => (
+        <TouchableOpacity
+          key={brush.type}
+          style={[
+            styles.brushTypeButton,
+            currentBrush.type === brush.type && styles.activeBrushTypeButton,
+          ]}
+          onPress={() => handleBrushTypePress(brush.type)}
+        >
+          <Icon
+            name={brush.icon}
+            size={24}
+            color={
+              currentBrush.type === brush.type
+                ? COLORS.accent
+                : COLORS.text.secondary
+            }
+          />
+          <Text
+            style={[
+              styles.brushTypeLabel,
+              currentBrush.type === brush.type && styles.activeBrushTypeLabel,
+            ]}
+          >
+            {brush.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+
+  const renderColorPicker = () => (
+    <View style={styles.colorPickerContainer}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        {[...recentColors, ...DEFAULT_COLORS].map((color, index) => (
+          <TouchableOpacity
+            key={`${color}-${index}`}
+            style={[
+              styles.colorButton,
+              { backgroundColor: color },
+              currentBrush.color === color && styles.activeColorButton,
+            ]}
+            onPress={() => handleColorPress(color)}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
+
+  const renderBrushSettings = () => {
+    const settings = currentBrush.settings || {};
+
+    return (
+      <View style={styles.brushSettingsContainer}>
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>大小</Text>
+          <Slider
+            style={styles.slider}
+            minimumValue={1}
+            maximumValue={50}
+            value={currentBrush.strokeWidth}
+            onValueChange={setBrushWidth}
+            minimumTrackTintColor={COLORS.accent}
+            maximumTrackTintColor={COLORS.text.secondary}
+          />
+        </View>
+
+        <View style={styles.settingRow}>
+          <Text style={styles.settingLabel}>不透明度</Text>
+          <Slider
+            style={styles.slider}
+            minimumValue={0}
+            maximumValue={1}
+            value={currentBrush.opacity}
+            onValueChange={setBrushOpacity}
+            minimumTrackTintColor={COLORS.accent}
+            maximumTrackTintColor={COLORS.text.secondary}
+          />
+        </View>
+
+        {currentBrush.type === BrushType.SOFT && (
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>柔和度</Text>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={1}
+              value={settings.softness || 0.5}
+              onValueChange={(value) => setBrushSettings({ softness: value })}
+              minimumTrackTintColor={COLORS.accent}
+              maximumTrackTintColor={COLORS.text.secondary}
+            />
+          </View>
+        )}
+
+        {currentBrush.type === BrushType.NEON && (
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>发光强度</Text>
+            <Slider
+              style={styles.slider}
+              minimumValue={0}
+              maximumValue={1}
+              value={settings.glowIntensity || 0.7}
+              onValueChange={(value) =>
+                setBrushSettings({ glowIntensity: value })
+              }
+              minimumTrackTintColor={COLORS.accent}
+              maximumTrackTintColor={COLORS.text.secondary}
+            />
+          </View>
+        )}
+
+        {currentBrush.type === BrushType.MOSAIC && (
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>马赛克大小</Text>
+            <Slider
+              style={styles.slider}
+              minimumValue={5}
+              maximumValue={50}
+              value={settings.mosaicSize || 10}
+              onValueChange={(value) =>
+                setBrushSettings({ mosaicSize: Math.round(value) })
+              }
+              minimumTrackTintColor={COLORS.accent}
+              maximumTrackTintColor={COLORS.text.secondary}
+            />
+          </View>
+        )}
+
+        {currentBrush.type === BrushType.BLUR && (
+          <View style={styles.settingRow}>
+            <Text style={styles.settingLabel}>模糊半径</Text>
+            <Slider
+              style={styles.slider}
+              minimumValue={1}
+              maximumValue={25}
+              value={settings.blurRadius || 10}
+              onValueChange={(value) =>
+                setBrushSettings({ blurRadius: Math.round(value) })
+              }
+              minimumTrackTintColor={COLORS.accent}
+              maximumTrackTintColor={COLORS.text.secondary}
+            />
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>绘画工具</Text>
-        {onClose && (
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Icon name="close-outline" size={24} color={COLORS.text.primary} />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.headerButton} onPress={undo}>
+          <Icon name="arrow-undo" size={24} color={COLORS.text.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.headerButton} onPress={redo}>
+          <Icon name="arrow-redo" size={24} color={COLORS.text.primary} />
+        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
+        <TouchableOpacity style={styles.headerButton} onPress={clear}>
+          <Icon name="trash-outline" size={24} color={COLORS.text.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.headerButton} onPress={onClose}>
+          <Icon name="close" size={24} color={COLORS.text.primary} />
+        </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.optionGroup}>
-          <Text style={styles.optionTitle}>工具</Text>
-          <View style={styles.toolsRow}>
-            {drawingTools.map((tool) => (
-              <TouchableOpacity
-                key={tool.id}
-                style={[
-                  styles.toolButton,
-                  selectedTool === tool.id && styles.selectedToolButton,
-                ]}
-                onPress={() => setSelectedTool(tool.id)}
-              >
-                <Icon
-                  name={tool.icon}
-                  size={22}
-                  color={
-                    selectedTool === tool.id
-                      ? COLORS.accent
-                      : COLORS.text.secondary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.toolName,
-                    selectedTool === tool.id && styles.selectedToolName,
-                  ]}
-                >
-                  {tool.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.optionGroup}>
-          <Text style={styles.optionTitle}>颜色</Text>
-          <View style={styles.colorsGrid}>
-            {colorOptions.map((color) => (
-              <TouchableOpacity
-                key={color}
-                style={[
-                  styles.colorOption,
-                  { backgroundColor: color },
-                  selectedColor === color && styles.selectedColorOption,
-                  color === "#FFFFFF" && styles.whiteColorOption,
-                ]}
-                onPress={() => setSelectedColor(color)}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.optionGroup}>
-          <View style={styles.sizeHeader}>
-            <Text style={styles.optionTitle}>笔刷大小</Text>
-            <Text style={styles.sizeValue}>{brushSize}</Text>
-          </View>
-
-          <Slider
-            style={styles.slider}
-            minimumValue={1}
-            maximumValue={30}
-            value={brushSize}
-            onValueChange={(value) => setBrushSize(Math.round(value))}
-            minimumTrackTintColor={COLORS.accent}
-            maximumTrackTintColor={COLORS.border}
-            thumbTintColor={COLORS.accent}
-          />
-
-          <View style={styles.brushPreview}>
-            <View
-              style={[
-                styles.brushSizePreview,
-                {
-                  width: brushSize,
-                  height: brushSize,
-                  backgroundColor: selectedColor,
-                },
-              ]}
-            />
-          </View>
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.clearButton,
-            { opacity: selectedTool === "eraser" ? 0.5 : 1 },
-          ]}
-          disabled={selectedTool === "eraser"}
-        >
-          <Text style={styles.clearButtonText}>清除所有</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      {renderBrushTypeButtons()}
+      {currentBrush.type !== BrushType.ERASER && renderColorPicker()}
+      {renderBrushSettings()}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: COLORS.panelBackground,
-    borderRadius: 12,
-    margin: 8,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingBottom: 12,
+    padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
-    marginBottom: 16,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: COLORS.text.primary,
+  headerButton: {
+    padding: 10,
   },
-  content: {
+  headerSpacer: {
     flex: 1,
   },
-  closeButton: {
-    padding: 4,
+  brushTypesContainer: {
+    paddingVertical: 10,
   },
-  optionGroup: {
-    marginBottom: 20,
-  },
-  optionTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: COLORS.text.primary,
-    marginBottom: 10,
-  },
-  toolsRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  toolButton: {
+  brushTypeButton: {
     alignItems: "center",
-    padding: 12,
+    padding: 10,
+    marginHorizontal: 5,
     borderRadius: 8,
-    backgroundColor: COLORS.canvasBackground,
-    minWidth: 80,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
   },
-  selectedToolButton: {
+  activeBrushTypeButton: {
     backgroundColor: COLORS.accent + "15",
-    borderColor: COLORS.accent,
   },
-  toolName: {
-    marginTop: 6,
-    fontSize: 14,
+  brushTypeLabel: {
+    marginTop: 4,
+    fontSize: 12,
     color: COLORS.text.secondary,
   },
-  selectedToolName: {
+  activeBrushTypeLabel: {
     color: COLORS.accent,
-    fontWeight: "500",
   },
-  colorsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "flex-start",
+  colorPickerContainer: {
+    padding: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.divider,
   },
-  colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-    marginBottom: 12,
+  colorButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginHorizontal: 5,
+    borderWidth: 2,
+    borderColor: COLORS.background,
   },
-  selectedColorOption: {
-    borderWidth: 3,
+  activeColorButton: {
     borderColor: COLORS.accent,
   },
-  whiteColorOption: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
+  brushSettingsContainer: {
+    padding: 10,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.divider,
   },
-  sizeHeader: {
+  settingRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    marginVertical: 5,
   },
-  sizeValue: {
-    fontSize: 16,
-    fontWeight: "bold",
+  settingLabel: {
+    width: 80,
     color: COLORS.text.primary,
+    fontSize: 14,
   },
   slider: {
-    width: "100%",
+    flex: 1,
     height: 40,
-  },
-  brushPreview: {
-    alignItems: "center",
-    marginTop: 10,
-  },
-  brushSizePreview: {
-    borderRadius: 50,
-    minWidth: 4,
-    minHeight: 4,
-  },
-  clearButton: {
-    backgroundColor: COLORS.accent,
-    paddingVertical: 12,
-    borderRadius: 24,
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  clearButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 16,
   },
 });

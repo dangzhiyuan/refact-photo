@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { generateId } from "../utils/idGenerator";
-import { Layer, LayerType, Transform, CanvasType } from "../core/types/canvas";
+import {
+  Layer,
+  LayerType,
+  Transform,
+  CanvasType,
+  DrawingPath,
+} from "../core/types/canvas";
 
 interface CanvasState {
   // 图层管理
@@ -31,9 +37,12 @@ interface CanvasState {
   // 视口操作
   updateViewport: (updates: Partial<CanvasState["viewport"]>) => void;
   resetViewport: () => void;
-  
+
   // 重置所有图层
   resetLayers: () => void;
+
+  // 添加创建绘画图层的方法
+  addDrawingLayer: (paths: DrawingPath[]) => string;
 }
 
 const DEFAULT_VIEWPORT = {
@@ -159,7 +168,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   resetViewport: () => {
     set({ viewport: DEFAULT_VIEWPORT });
   },
-  
+
   // 重置所有图层数据
   resetLayers: () => {
     set({
@@ -168,5 +177,32 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
       selectedLayerId: null,
       activeCanvas: CanvasType.BASE,
     });
+  },
+
+  addDrawingLayer: (paths) => {
+    const id = generateId("drawing");
+    const layer: Layer = {
+      id,
+      type: LayerType.DRAWING,
+      zIndex: get().layerIds.length,
+      visible: true,
+      opacity: 1,
+      transform: {
+        position: { x: 0, y: 0 },
+        scale: 1,
+        rotation: 0,
+      },
+      paths,
+    };
+
+    set((state) => ({
+      layers: {
+        ...state.layers,
+        [id]: layer,
+      },
+      layerIds: [...state.layerIds, id],
+    }));
+
+    return id;
   },
 }));

@@ -24,6 +24,8 @@ import { useLayerVisibility } from "../hooks/useLayerVisibility";
 import { StickerPanel } from "./panels/StickerPanel";
 import { useCanvasStore } from "../store/canvasStore";
 import { LayerType } from "../core/types/canvas";
+import { DrawingPanel } from "./panels/DrawingPanel";
+import { DrawingCanvas } from "./canvas/DrawingCanvas";
 
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -71,30 +73,36 @@ export const Editor: React.FC = () => {
 
   const handleToolChange = useCallback(
     (tool: ToolType) => {
-      if (tool === EditorMode.STICKER) {
-        if (tool === activeTool) {
-          setIsPanelVisible(!isPanelVisible);
+      console.log("Tool change:", {
+        currentTool: activeTool,
+        newTool: tool,
+        currentMode,
+        isPanelVisible,
+      });
+
+      // 如果切换到不同的工具，先设置模式再设置工具
+      if (tool !== activeTool) {
+        console.log("Setting new mode:", tool);
+        // 先设置模式
+        if (Object.values(EditorMode).includes(tool as EditorMode)) {
+          setMode(tool as EditorMode);
+          // 等待一帧后再设置工具，确保模式变化已经生效
+          requestAnimationFrame(() => {
+            setActiveTool(tool);
+          });
         } else {
           setActiveTool(tool);
-          setMode(tool as EditorMode);
-          if (!isPanelVisible) {
-            setIsPanelVisible(true);
-          }
         }
-        return;
       }
 
+      // 处理面板可见性
       if (tool === activeTool) {
         setIsPanelVisible(!isPanelVisible);
       } else {
-        setActiveTool(tool);
-        if (Object.values(EditorMode).includes(tool as EditorMode)) {
-          setMode(tool as EditorMode);
-        }
         setIsPanelVisible(true);
       }
     },
-    [activeTool, isPanelVisible, setMode]
+    [activeTool, isPanelVisible, setMode, currentMode]
   );
 
   const MemoizedStickerPanel = React.memo(
@@ -134,6 +142,7 @@ export const Editor: React.FC = () => {
           setActiveCanvas={setActiveCanvas}
         />
       ),
+      [EditorMode.DRAW]: <DrawingPanel onClose={handlePanelClose} />,
     };
     return panels[activeTool] || null;
   }, [
@@ -173,7 +182,15 @@ export const Editor: React.FC = () => {
       icon: "images-outline",
     }));
 
-    const allLayers = [...staticLayers, ...stickerLayerItems];
+    const drawingLayers = layerIds
+      .filter((id) => layers[id] && layers[id].type === LayerType.DRAWING)
+      .map((id) => ({
+        id,
+        name: `绘画 ${id.substring(id.length > 5 ? id.length - 5 : 0)}`,
+        icon: "brush-outline",
+      }));
+
+    const allLayers = [...staticLayers, ...stickerLayerItems, ...drawingLayers];
 
     return (
       <View style={layerSelectorStyles.container}>
@@ -252,7 +269,6 @@ export const Editor: React.FC = () => {
 
       <QuickLayerSelector />
 
-      {/* 外层View占据屏幕总高度50%的区域 */}
       <View
         style={{
           height: "50%",
@@ -264,7 +280,6 @@ export const Editor: React.FC = () => {
           overflow: "hidden",
         }}
       >
-        {/* 可编辑区域，内部大小与图片相同 */}
         <View
           style={{
             width: imageDimensions.width,
@@ -276,7 +291,6 @@ export const Editor: React.FC = () => {
             borderColor: "rgba(0, 255, 0, 0.2)",
           }}
         >
-          {/* 渲染画布管理器 */}
           <CanvasViewport
             activeCanvas={activeCanvas}
             setActiveCanvas={setActiveCanvas}
@@ -284,6 +298,18 @@ export const Editor: React.FC = () => {
             onCanvasSizeChange={handleCanvasSizeChange}
             {...viewportConfig}
           />
+          {currentMode === EditorMode.DRAW && (
+            <View style={StyleSheet.absoluteFill}>
+              <DrawingCanvas
+                width={imageDimensions.width}
+                height={imageDimensions.height}
+                onLayerCreated={(layerId) => {
+                  // 只切换活动图层，不自动切换模式
+                  setActiveCanvas(layerId);
+                }}
+              />
+            </View>
+          )}
         </View>
       </View>
 

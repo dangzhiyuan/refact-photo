@@ -54,8 +54,22 @@ export const LayerPanel: React.FC<LayerPanelProps> = ({
       type: LayerType.STICKER,
     }));
 
-  // 合并静态画布和动态贴纸图层
-  const allLayers = [...staticCanvasOptions, ...stickerLayers];
+  // 过滤出所有绘画类型的图层
+  const drawingLayers = layerIds
+    .filter((id) => layers[id] && layers[id].type === LayerType.DRAWING)
+    .map((id) => ({
+      id,
+      name: `绘画 ${id.substring(id.length - 5)}`, // 使用ID的最后5个字符作为名称后缀
+      icon: "brush-outline",
+      type: LayerType.DRAWING,
+    }));
+
+  // 合并静态画布和动态图层
+  const allLayers = [
+    ...staticCanvasOptions,
+    ...stickerLayers,
+    ...drawingLayers,
+  ];
 
   return (
     <View style={styles.container}>

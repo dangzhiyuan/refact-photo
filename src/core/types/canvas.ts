@@ -63,6 +63,29 @@ export interface DrawingPath {
   points: { x: number; y: number }[];
   color: string;
   strokeWidth: number;
+  opacity: number;
+  brushType: BrushType;
+  brushSettings?: BrushSettings;
+}
+
+export enum BrushType {
+  NORMAL = "normal",
+  SOFT = "soft",
+  NEON = "neon",
+  MOSAIC = "mosaic",
+  BLUR = "blur",
+  ERASER = "eraser",
+}
+
+export interface BrushSettings {
+  // 柔和画笔的羽化程度
+  softness?: number;
+  // 霓虹笔的发光强度
+  glowIntensity?: number;
+  // 马赛克的块大小
+  mosaicSize?: number;
+  // 模糊强度
+  blurRadius?: number;
 }
 
 export interface ImageAdjustments {
