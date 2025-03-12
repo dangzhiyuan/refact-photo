@@ -197,7 +197,6 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   );
 };
 
-// 生成SVG路径
 const generateSvgPath = (points: Point[]): string => {
   if (points.length < 2) return "";
 

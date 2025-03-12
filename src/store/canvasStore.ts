@@ -34,6 +34,11 @@ interface CanvasState {
   selectLayer: (id: string | null) => void;
   setActiveCanvas: (canvas: CanvasType) => void;
 
+  // 图层排序
+  moveLayerUp: (id: string) => void;
+  moveLayerDown: (id: string) => void;
+  setLayerZIndex: (id: string, zIndex: number) => void;
+
   // 视口操作
   updateViewport: (updates: Partial<CanvasState["viewport"]>) => void;
   resetViewport: () => void;
@@ -134,6 +139,89 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     });
   },
 
+  // 图层排序功能
+  moveLayerUp: (id) => {
+    const state = get();
+    if (!state.layers[id]) return;
+
+    const currentZIndex = state.layers[id].zIndex;
+
+    // 找到所有zIndex大于当前图层的图层
+    const layersAbove = Object.entries(state.layers)
+      .filter(([layerId, layer]) => layer.zIndex > currentZIndex)
+      .sort((a, b) => a[1].zIndex - b[1].zIndex);
+
+    if (layersAbove.length === 0) return; // 已经是最顶层
+
+    // 获取紧邻上方的图层及其zIndex
+    const [aboveId, aboveLayer] = layersAbove[0];
+    const aboveZIndex = aboveLayer.zIndex;
+
+    // 交换两个图层的zIndex
+    set((state) => ({
+      layers: {
+        ...state.layers,
+        [id]: {
+          ...state.layers[id],
+          zIndex: aboveZIndex,
+        },
+        [aboveId]: {
+          ...state.layers[aboveId],
+          zIndex: currentZIndex,
+        },
+      },
+    }));
+  },
+
+  moveLayerDown: (id) => {
+    const state = get();
+    if (!state.layers[id]) return;
+
+    const currentZIndex = state.layers[id].zIndex;
+
+    // 找到所有zIndex小于当前图层的图层
+    const layersBelow = Object.entries(state.layers)
+      .filter(([layerId, layer]) => layer.zIndex < currentZIndex)
+      .sort((a, b) => b[1].zIndex - a[1].zIndex); // 降序排列
+
+    if (layersBelow.length === 0) return; // 已经是最底层
+
+    // 获取紧邻下方的图层及其zIndex
+    const [belowId, belowLayer] = layersBelow[0];
+    const belowZIndex = belowLayer.zIndex;
+
+    // 交换两个图层的zIndex
+    set((state) => ({
+      layers: {
+        ...state.layers,
+        [id]: {
+          ...state.layers[id],
+          zIndex: belowZIndex,
+        },
+        [belowId]: {
+          ...state.layers[belowId],
+          zIndex: currentZIndex,
+        },
+      },
+    }));
+  },
+
+  setLayerZIndex: (id, zIndex) => {
+    set((state) => {
+      if (!state.layers[id]) return state;
+
+      return {
+        layers: {
+          ...state.layers,
+          [id]: {
+            ...state.layers[id],
+            zIndex,
+          },
+        },
+      };
+    });
+  },
+
   deleteLayer: (id) => {
     set((state) => {
       const { [id]: _, ...remainingLayers } = state.layers;
@@ -181,10 +269,20 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   addDrawingLayer: (paths) => {
     const id = generateId("drawing");
+
+    // 计算合适的zIndex
+    let maxZIndex = 0;
+    const { layers, layerIds } = get();
+    for (const layerId of layerIds) {
+      if (layers[layerId] && layers[layerId].zIndex > maxZIndex) {
+        maxZIndex = layers[layerId].zIndex;
+      }
+    }
+
     const layer: Layer = {
       id,
       type: LayerType.DRAWING,
-      zIndex: get().layerIds.length,
+      zIndex: maxZIndex + 1, // 使用计算出的zIndex
       visible: true,
       opacity: 1,
       transform: {

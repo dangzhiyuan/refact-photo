@@ -47,9 +47,11 @@ export interface TextLayer extends BaseLayer {
 
 export interface StickerLayer extends BaseLayer {
   type: LayerType.STICKER;
-  stickerUri: string;
+  stickerUri: string; // 网络贴纸的 URI
   width: number;
   height: number;
+  isLocalSticker?: boolean; // 是否是本地贴纸
+  localStickerSource?: any; // 本地贴纸的资源引用
   matrix?: any;
 }
 

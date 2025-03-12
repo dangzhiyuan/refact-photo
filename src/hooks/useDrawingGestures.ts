@@ -1,13 +1,9 @@
-import { useMemo } from "react";
 import { useCanvasGestures } from "./useCanvasGestures";
-
-const MAX_DRAWING_LAYERS = 5;
 
 export const useDrawingGestures = (
   drawingLayers: string[],
   onDragStart: (layerId: string) => void
 ) => {
-  // 在顶层调用 hooks
   const gesture0 = useCanvasGestures({
     contentWidth: 0,
     contentHeight: 0,

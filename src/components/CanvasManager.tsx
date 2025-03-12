@@ -239,82 +239,104 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
         />
       </View>
 
-      {/* 渲染绘画图层 */}
-      {drawingLayers.map((layerId, index) => {
-        if (index >= MAX_DRAWING_LAYERS) return null;
+      {/* 按照zIndex排序所有用户创建的图层 */}
+      {[...drawingLayers, ...stickerLayers]
+        .filter((layerId) => layers[layerId])
+        .sort((a, b) => (layers[a]?.zIndex || 0) - (layers[b]?.zIndex || 0))
+        .map((layerId) => {
+          // 绘画图层
+          if (drawingLayers.includes(layerId)) {
+            const layer = layers[layerId];
+            if (!layer || layer.type !== LayerType.DRAWING) return null;
 
-        const layer = layers[layerId];
-        if (!layer || layer.type !== LayerType.DRAWING) return null;
+            // 查找对应的手势状态
+            const gestureState = drawingGestureStates[layerId];
+            if (!gestureState) return null;
 
-        const { gesture } = drawingGestureStates[layerId];
-        const animatedStyle = animatedStyles[index];
+            const { gesture } = gestureState;
+            // 查找对应的动画样式
+            const index = drawingLayers.indexOf(layerId);
+            const animatedStyle =
+              index >= 0 && index < MAX_DRAWING_LAYERS
+                ? animatedStyles[index]
+                : undefined;
+            if (!animatedStyle) return null;
 
-        return (
-          <View
-            key={layerId}
-            style={[
-              StyleSheet.absoluteFill,
-              { opacity: visibleLayers[layerId] !== false ? 1 : 0 },
-              { zIndex: 3 },
-            ]}
-            pointerEvents={activeCanvas === layerId ? "auto" : "none"}
-          >
-            <GestureDetector gesture={gesture}>
-              <Animated.View style={[StyleSheet.absoluteFill, animatedStyle]}>
-                <Canvas style={StyleSheet.absoluteFill}>
-                  {layer.paths.map((path) => (
-                    <Path
-                      key={path.id}
-                      path={generateSvgPath(path.points)}
-                      color={path.color}
-                      style="stroke"
-                      strokeWidth={path.strokeWidth}
-                      strokeCap="round"
-                      strokeJoin="round"
-                      opacity={path.opacity}
-                    />
-                  ))}
-                </Canvas>
-                {activeCanvas === layerId && (
-                  <View
-                    style={{
-                      ...StyleSheet.absoluteFillObject,
-                      borderWidth: 2,
-                      borderColor: "rgba(52, 120, 246, 0.4)",
-                      borderRadius: 4,
-                    }}
-                  />
-                )}
-              </Animated.View>
-            </GestureDetector>
-          </View>
-        );
-      })}
+            return (
+              <View
+                key={layerId}
+                style={[
+                  StyleSheet.absoluteFill,
+                  { opacity: visibleLayers[layerId] !== false ? 1 : 0 },
+                  // 使用图层自身的zIndex加上基础值
+                  { zIndex: 10 + (layer.zIndex || 0) },
+                ]}
+                pointerEvents={activeCanvas === layerId ? "auto" : "none"}
+              >
+                <GestureDetector gesture={gesture}>
+                  <Animated.View
+                    style={[StyleSheet.absoluteFill, animatedStyle]}
+                  >
+                    <Canvas style={StyleSheet.absoluteFill}>
+                      {layer.paths.map((path) => (
+                        <Path
+                          key={path.id}
+                          path={generateSvgPath(path.points)}
+                          color={path.color}
+                          style="stroke"
+                          strokeWidth={path.strokeWidth}
+                          strokeCap="round"
+                          strokeJoin="round"
+                          opacity={path.opacity}
+                        />
+                      ))}
+                    </Canvas>
+                    {activeCanvas === layerId && (
+                      <View
+                        style={{
+                          ...StyleSheet.absoluteFillObject,
+                          borderWidth: 2,
+                          borderColor: "rgba(52, 120, 246, 0.4)",
+                          borderRadius: 4,
+                        }}
+                      />
+                    )}
+                  </Animated.View>
+                </GestureDetector>
+              </View>
+            );
+          }
+          // 贴纸图层
+          else {
+            const layer = layers[layerId];
+            if (!layer) return null;
 
-      {/* 渲染贴纸图层 */}
-      {stickerLayers.map((layerId) => (
-        <View
-          key={layerId}
-          style={[
-            StyleSheet.absoluteFill,
-            { opacity: visibleLayers[layerId] !== false ? 1 : 0 },
-            { zIndex: 4 },
-          ]}
-          pointerEvents="box-none"
-        >
-          <StickerCanvas
-            layerId={layerId}
-            initialScale={initialScale}
-            isActive={activeCanvas === layerId}
-            onSelect={setActiveCanvas}
-            onDelete={(id) => {
-              if (activeCanvas === id) {
-                setActiveCanvas("base");
-              }
-            }}
-          />
-        </View>
-      ))}
+            return (
+              <View
+                key={layerId}
+                style={[
+                  StyleSheet.absoluteFill,
+                  { opacity: visibleLayers[layerId] !== false ? 1 : 0 },
+                  // 使用图层自身的zIndex加上基础值
+                  { zIndex: 10 + (layer.zIndex || 0) },
+                ]}
+                pointerEvents="box-none"
+              >
+                <StickerCanvas
+                  layerId={layerId}
+                  initialScale={initialScale}
+                  isActive={activeCanvas === layerId}
+                  onSelect={setActiveCanvas}
+                  onDelete={(id) => {
+                    if (activeCanvas === id) {
+                      setActiveCanvas("base");
+                    }
+                  }}
+                />
+              </View>
+            );
+          }
+        })}
     </View>
   );
 };

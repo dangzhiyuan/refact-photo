@@ -15,6 +15,8 @@ export const COLORS = {
     active: "#FF6B95",
     inactive: "#AAAAAA",
   },
+  success: "#4CAF50",
+  error: "#F44336",
   axisLine: "pink",
   axisText: "#999999",
 };

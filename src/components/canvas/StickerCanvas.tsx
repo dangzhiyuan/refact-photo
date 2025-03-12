@@ -4,6 +4,7 @@ import {
   View,
   Dimensions,
   TouchableWithoutFeedback,
+  Image as RNImage,
 } from "react-native";
 import { useCanvasStore } from "../../store/canvasStore";
 import { Canvas, Image, useImage } from "@shopify/react-native-skia";
@@ -53,6 +54,9 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
   // 所有的 hooks 必须在组件顶层调用，在任何条件语句之前
   // 加载贴纸图像 - 即使图层不存在也要调用这个 hook
   const image = useImage(layer?.stickerUri || "");
+
+  // 判断是否使用本地贴纸
+  const isLocalSticker = layer?.isLocalSticker || false;
 
   // 创建手势变量 - 使用 SharedValue 处理变换
   const scale = useSharedValue(initialScale);
@@ -106,9 +110,14 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
     };
   });
 
-  // 如果没有找到图层或者类型不匹配或没有加载图像，返回空视图
-  if (!layer || layer.type !== LayerType.STICKER || !image) {
+  // 如果没有找到图层或者类型不匹配，返回空视图
+  if (!layer || layer.type !== LayerType.STICKER) {
     return null;
+  }
+
+  // 对于本地贴纸，我们不需要检查 Skia 图像是否加载
+  if (!isLocalSticker && !image) {
+    return null; // 仅当是网络贴纸且图像未加载时返回 null
   }
 
   // 更新图层位置函数
@@ -188,20 +197,39 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
     Gesture.Simultaneous(pinchGesture, rotateGesture)
   );
 
+  // 渲染内容（根据贴纸类型不同而不同）
+  const renderStickerContent = () => {
+    if (isLocalSticker) {
+      // 对于本地贴纸，使用 React Native 的 Image 组件
+      return (
+        <RNImage
+          source={layer.localStickerSource}
+          style={styles.stickerImage}
+          resizeMode="contain"
+        />
+      );
+    } else {
+      // 对于网络贴纸，使用 Skia 的 Canvas 和 Image
+      return (
+        <Canvas style={styles.canvas}>
+          <Image
+            image={image}
+            x={0}
+            y={0}
+            width={layer.width}
+            height={layer.height}
+            fit="contain"
+          />
+        </Canvas>
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       <GestureDetector gesture={gesture}>
         <Animated.View style={[styles.stickerContainer, animatedStyle]}>
-          <Canvas style={styles.canvas}>
-            <Image
-              image={image}
-              x={0}
-              y={0}
-              width={layer.width}
-              height={layer.height}
-              fit="contain"
-            />
-          </Canvas>
+          {renderStickerContent()}
 
           {/* 可点击的透明覆盖层，覆盖整个贴纸区域 */}
           <TouchableWithoutFeedback onPress={handlePress}>
@@ -248,13 +276,20 @@ const styles = StyleSheet.create({
   },
   touchableContainer: {
     position: "absolute",
-    width: "100%",
-    height: "100%",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   stickerContainer: {
     position: "absolute",
   },
   canvas: {
-    flex: 1,
+    width: "100%",
+    height: "100%",
+  },
+  stickerImage: {
+    width: "100%",
+    height: "100%",
   },
 });
