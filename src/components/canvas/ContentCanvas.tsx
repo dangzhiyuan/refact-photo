@@ -4,6 +4,7 @@ import { Canvas, Circle } from "@shopify/react-native-skia";
 import { GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 import { useCanvasGestures } from "../../hooks/useCanvasGestures";
+import { useEditorStore } from "../../store/editorStore";
 
 const CIRCLE_CONFIG = {
   radius: 50,
@@ -28,12 +29,39 @@ export const ContentCanvas: React.FC<ContentCanvasProps> = ({
   onDragStart,
   onSelect,
 }) => {
-  const { gesture, scale, offset, isActive: gestureActive } = useCanvasGestures({
+  // 获取editorStore中的变换状态和更新方法
+  const contentCanvasTransform = useEditorStore(
+    (state) => state.contentCanvasTransform
+  );
+  const updateContentCanvasTransform = useEditorStore(
+    (state) => state.updateContentCanvasTransform
+  );
+
+  // 当变换结束时保存状态到editorStore
+  const handleTransformEnd = useCallback(
+    (transform: { scale: number; x: number; y: number }) => {
+      console.log("保存内容画布变换:", transform);
+      updateContentCanvasTransform({
+        scale: transform.scale,
+        position: { x: transform.x, y: transform.y },
+      });
+    },
+    [updateContentCanvasTransform]
+  );
+
+  const {
+    gesture,
+    scale,
+    offset,
+    isActive: gestureActive,
+  } = useCanvasGestures({
     contentWidth: CANVAS_WIDTH,
     contentHeight: CANVAS_HEIGHT,
-    initialScale: initialScale,
-    autoFit: true,
+    initialScale: contentCanvasTransform.scale,
+    initialOffset: contentCanvasTransform.position,
+    autoFit: false, // 使用存储的变换状态，不自动适配
     onDragStart,
+    onTransformEnd: handleTransformEnd,
   });
 
   const handlePress = useCallback(() => {
@@ -70,10 +98,8 @@ export const ContentCanvas: React.FC<ContentCanvasProps> = ({
                 color={CIRCLE_CONFIG.color}
               />
             </Canvas>
-            
-            {isActive && (
-              <View style={styles.activeIndicator} />
-            )}
+
+            {isActive && <View style={styles.activeIndicator} />}
           </Animated.View>
         </GestureDetector>
       </View>
@@ -87,13 +113,13 @@ const styles = StyleSheet.create({
   },
   canvas: {},
   activeIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     borderWidth: 2,
-    borderColor: 'rgba(255, 87, 34, 0.5)',
+    borderColor: "rgba(255, 87, 34, 0.5)",
     borderRadius: 4,
   },
 });

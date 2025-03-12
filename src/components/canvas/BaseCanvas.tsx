@@ -38,7 +38,15 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
 }) => {
   const { image, isLoading, hasError, errorMessage, debug } =
     useImageLoader(DEFAULT_IMAGE_URL);
+
+  // 获取editorStore中的变换状态和更新方法
   const setBaseImageUri = useEditorStore((state) => state.setBaseImageUri);
+  const baseCanvasTransform = useEditorStore(
+    (state) => state.baseCanvasTransform
+  );
+  const updateBaseCanvasTransform = useEditorStore(
+    (state) => state.updateBaseCanvasTransform
+  );
 
   const viewportSize = {
     width: SCREEN_WIDTH - 20,
@@ -80,14 +88,28 @@ export const BaseCanvas: React.FC<BaseCanvasProps> = ({
     }
   }, [image, onSizeChange, viewportSize.width, viewportSize.height]);
 
+  // 当变换结束时保存状态到editorStore
+  const handleTransformEnd = useCallback(
+    (transform: { scale: number; x: number; y: number }) => {
+      console.log("保存基础画布变换:", transform);
+      updateBaseCanvasTransform({
+        scale: transform.scale,
+        position: { x: transform.x, y: transform.y },
+      });
+    },
+    [updateBaseCanvasTransform]
+  );
+
   const { gesture, scale, offset } = useCanvasGestures({
     contentWidth: canvasSize.width,
     contentHeight: canvasSize.height,
-    initialScale,
-    autoFit: true,
+    initialScale: baseCanvasTransform.scale,
+    initialOffset: baseCanvasTransform.position,
+    autoFit: image ? false : true, // 仅在没有图像时使用自动适配
     viewportWidth: viewportSize.width,
     viewportHeight: viewportSize.height,
     onDragStart,
+    onTransformEnd: handleTransformEnd,
   });
 
   const containerStyle = useAnimatedStyle(() => ({
@@ -251,15 +273,12 @@ const styles = StyleSheet.create({
   },
   retryButton: {
     backgroundColor: COLORS.accent,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     borderRadius: 8,
-    alignItems: "center",
-    width: "90%",
   },
   retryButtonText: {
-    color: "#fff",
-    fontSize: 14,
+    color: "white",
     fontWeight: "600",
   },
   activeIndicator: {
@@ -269,7 +288,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderWidth: 2,
-    borderColor: "rgba(0, 0, 255, 0.5)",
+    borderColor: "rgba(0, 0, 255, 0.4)",
     borderRadius: 4,
   },
 });

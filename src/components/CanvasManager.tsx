@@ -63,7 +63,7 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
     [activeCanvas, setActiveCanvas]
   );
 
-  // 使用自定义 hook 获取手势状态
+  // 使用自定义 hook 获取手势状态，现在它会自动处理变换的保存和恢复
   const gestureStates = useDrawingGestures(
     drawingLayers,
     handleCanvasDragStart
@@ -162,27 +162,6 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
     animatedStyle3,
     animatedStyle4,
   ]);
-
-  // 初始化手势状态的值
-  useEffect(() => {
-    drawingLayers.forEach((layerId, index) => {
-      if (index < gestureStates.length) {
-        const layer = layers[layerId];
-        if (
-          layer &&
-          layer.type === LayerType.DRAWING &&
-          layer.transform &&
-          layer.transform.scale
-        ) {
-          const gestureState = gestureStates[index];
-          if (gestureState && gestureState.scale) {
-            // 安全地更新值
-            gestureState.scale.value = layer.transform.scale;
-          }
-        }
-      }
-    });
-  }, [drawingLayers, gestureStates, layers]);
 
   const generateSvgPath = (points: { x: number; y: number }[]): string => {
     if (points.length < 2) return "";

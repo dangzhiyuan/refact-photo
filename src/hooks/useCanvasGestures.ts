@@ -16,6 +16,7 @@ interface UseCanvasGesturesProps {
   contentHeight?: number;
   onTransformEnd?: (transform: { scale: number; x: number; y: number }) => void;
   initialScale?: number;
+  initialOffset?: { x: number; y: number };
   autoFit?: boolean;
   viewportWidth?: number;
   viewportHeight?: number;
@@ -29,17 +30,29 @@ export const useCanvasGestures = ({
   contentHeight = SCREEN_HEIGHT,
   onTransformEnd,
   initialScale = 1,
+  initialOffset = { x: 0, y: 0 },
   autoFit = true,
   viewportWidth = SCREEN_WIDTH - 40,
   viewportHeight = SCREEN_HEIGHT * 0.55,
   hitTestEnabled = true,
   onDragStart,
 }: UseCanvasGesturesProps = {}) => {
-  const scale = useSharedValue(1);
-  const savedScale = useSharedValue(1);
-  const offset = useSharedValue({ x: 0, y: 0 });
+  const scale = useSharedValue(initialScale);
+  const savedScale = useSharedValue(initialScale);
+  const offset = useSharedValue(initialOffset);
   const start = useSharedValue({ x: 0, y: 0 });
   const isActive = useSharedValue(false);
+
+  useEffect(() => {
+    console.log("初始缩放更新:", initialScale);
+    scale.value = initialScale;
+    savedScale.value = initialScale;
+  }, [initialScale, scale, savedScale]);
+
+  useEffect(() => {
+    console.log("初始位置更新:", initialOffset);
+    offset.value = initialOffset;
+  }, [initialOffset, offset]);
 
   useEffect(() => {
     if (
@@ -66,15 +79,26 @@ export const useCanvasGestures = ({
         y: centerY,
       };
     }
-  }, [contentWidth, contentHeight, viewportWidth, viewportHeight, autoFit]);
+  }, [
+    contentWidth,
+    contentHeight,
+    viewportWidth,
+    viewportHeight,
+    autoFit,
+    scale,
+    savedScale,
+    offset,
+  ]);
 
   const safelyCallTransformEnd = () => {
     if (onTransformEnd) {
-      onTransformEnd({
+      const transform = {
         scale: scale.value,
         x: offset.value.x,
         y: offset.value.y,
-      });
+      };
+      console.log("变换结束，保存状态:", transform);
+      onTransformEnd(transform);
     }
   };
 
