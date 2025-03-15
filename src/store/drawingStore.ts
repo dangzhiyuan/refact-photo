@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { BrushType, BrushSettings, DrawingPath } from "../core/types/canvas";
 import { generateId } from "../utils/idGenerator";
+import { MAX_RECENT_COLORS } from "../core/constants";
+import { 
+  updateObject, 
+  updateNested, 
+  addArrayItem 
+} from "../utils/storeHelpers";
 
 interface DrawingState {
   // 当前画笔设置
@@ -42,8 +48,6 @@ interface DrawingState {
   clear: () => void;
 }
 
-const MAX_RECENT_COLORS = 10;
-
 const initialBrushSettings: Record<BrushType, Partial<BrushSettings>> = {
   [BrushType.NORMAL]: {},
   [BrushType.SOFT]: { softness: 0.5 },
@@ -53,7 +57,8 @@ const initialBrushSettings: Record<BrushType, Partial<BrushSettings>> = {
   [BrushType.ERASER]: {},
 };
 
-export const useDrawingStore = create<DrawingState>((set, get) => ({
+// 定义初始状态
+const initialState = {
   currentBrush: {
     type: BrushType.NORMAL,
     color: "#000000",
@@ -61,23 +66,24 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
     opacity: 1,
     settings: {},
   },
-
   history: {
     paths: [],
     redoPaths: [],
   },
-
   recentColors: [],
   currentPath: null,
+};
+
+export const useDrawingStore = create<DrawingState>((set, get) => ({
+  ...initialState,
 
   setBrushType: (type) => {
-    set((state) => ({
-      currentBrush: {
-        ...state.currentBrush,
+    set((state) => 
+      updateObject(state, 'currentBrush', {
         type,
         settings: initialBrushSettings[type],
-      },
-    }));
+      })
+    );
   },
 
   setBrushColor: (color) => {
@@ -88,44 +94,31 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
         ...state.recentColors.filter((c) => c !== color),
       ].slice(0, MAX_RECENT_COLORS);
 
+      // 使用辅助函数更新多个状态
+      const stateWithBrushUpdate = updateObject(state, 'currentBrush', { color });
       return {
-        currentBrush: {
-          ...state.currentBrush,
-          color,
-        },
-        recentColors,
+        ...stateWithBrushUpdate,
+        recentColors
       };
     });
   },
 
   setBrushWidth: (width) => {
-    set((state) => ({
-      currentBrush: {
-        ...state.currentBrush,
-        strokeWidth: width,
-      },
-    }));
+    set((state) => 
+      updateObject(state, 'currentBrush', { strokeWidth: width })
+    );
   },
 
   setBrushOpacity: (opacity) => {
-    set((state) => ({
-      currentBrush: {
-        ...state.currentBrush,
-        opacity,
-      },
-    }));
+    set((state) => 
+      updateObject(state, 'currentBrush', { opacity })
+    );
   },
 
   setBrushSettings: (settings) => {
-    set((state) => ({
-      currentBrush: {
-        ...state.currentBrush,
-        settings: {
-          ...state.currentBrush.settings,
-          ...settings,
-        },
-      },
-    }));
+    set((state) => 
+      updateNested(state, ['currentBrush', 'settings'], settings)
+    );
   },
 
   startPath: (point) => {
@@ -147,12 +140,9 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
     set((state) => {
       if (!state.currentPath) return state;
 
-      return {
-        currentPath: {
-          ...state.currentPath,
-          points: [...state.currentPath.points, point],
-        },
-      };
+      return updateNested(state, ['currentPath'], {
+        points: [...state.currentPath.points, point],
+      });
     });
   },
 
@@ -160,12 +150,16 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
     set((state) => {
       if (!state.currentPath) return state;
 
+      // 使用嵌套更新添加路径到历史记录
+      const updatedState = updateNested(state, ['history'], {
+        paths: [...state.history.paths, state.currentPath],
+        redoPaths: [], // 清空重做历史
+      });
+      
+      // 然后清除当前路径
       return {
-        currentPath: null,
-        history: {
-          paths: [...state.history.paths, state.currentPath],
-          redoPaths: [], // 清空重做历史
-        },
+        ...updatedState,
+        currentPath: null
       };
     });
   },
@@ -177,12 +171,10 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
       const paths = [...state.history.paths];
       const lastPath = paths.pop()!;
 
-      return {
-        history: {
-          paths,
-          redoPaths: [...state.history.redoPaths, lastPath],
-        },
-      };
+      return updateObject(state, 'history', {
+        paths,
+        redoPaths: [...state.history.redoPaths, lastPath],
+      });
     });
   },
 
@@ -193,22 +185,22 @@ export const useDrawingStore = create<DrawingState>((set, get) => ({
       const redoPaths = [...state.history.redoPaths];
       const pathToRestore = redoPaths.pop()!;
 
-      return {
-        history: {
-          paths: [...state.history.paths, pathToRestore],
-          redoPaths,
-        },
-      };
+      return updateObject(state, 'history', {
+        paths: [...state.history.paths, pathToRestore],
+        redoPaths,
+      });
     });
   },
 
   clear: () => {
-    set({
+    // 重置历史记录和当前路径，但保留画笔设置
+    set((state) => ({
+      ...state,
       history: {
         paths: [],
         redoPaths: [],
       },
       currentPath: null,
-    });
+    }));
   },
 }));

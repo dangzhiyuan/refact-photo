@@ -7,6 +7,12 @@ import {
   CanvasType,
   DrawingPath,
 } from "../core/types/canvas";
+import { 
+  updateObject, 
+  updateNested, 
+  addArrayItem, 
+  removeArrayItem 
+} from "../utils/storeHelpers";
 
 interface CanvasState {
   // 图层管理
@@ -88,54 +94,27 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
   updateLayer: (id, updates) => {
     set((state) => {
       if (!state.layers[id]) return state;
-
-      return {
-        layers: {
-          ...state.layers,
-          [id]: {
-            ...state.layers[id],
-            ...updates,
-          },
-        },
-      };
+      
+      // 使用辅助函数更新嵌套对象
+      return updateNested(state, ['layers', id], updates);
     });
   },
 
   moveLayer: (id, position) => {
     set((state) => {
       if (!state.layers[id]) return state;
-
-      return {
-        layers: {
-          ...state.layers,
-          [id]: {
-            ...state.layers[id],
-            transform: {
-              ...state.layers[id].transform,
-              position,
-            },
-          },
-        },
-      };
+      
+      // 使用嵌套更新辅助函数
+      return updateNested(state, ['layers', id, 'transform'], { position });
     });
   },
 
   transformLayer: (id, transform) => {
     set((state) => {
       if (!state.layers[id]) return state;
-
-      return {
-        layers: {
-          ...state.layers,
-          [id]: {
-            ...state.layers[id],
-            transform: {
-              ...state.layers[id].transform,
-              ...transform,
-            },
-          },
-        },
-      };
+      
+      // 使用嵌套更新辅助函数
+      return updateNested(state, ['layers', id, 'transform'], transform);
     });
   },
 
@@ -158,19 +137,20 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     const aboveZIndex = aboveLayer.zIndex;
 
     // 交换两个图层的zIndex
-    set((state) => ({
-      layers: {
-        ...state.layers,
-        [id]: {
-          ...state.layers[id],
-          zIndex: aboveZIndex,
-        },
-        [aboveId]: {
-          ...state.layers[aboveId],
-          zIndex: currentZIndex,
-        },
-      },
-    }));
+    set((state) => {
+      // 使用嵌套更新辅助函数处理多层嵌套
+      const stateWithCurrentLayerUpdate = updateNested(
+        state, 
+        ['layers', id], 
+        { zIndex: aboveZIndex }
+      );
+      
+      return updateNested(
+        stateWithCurrentLayerUpdate, 
+        ['layers', aboveId], 
+        { zIndex: currentZIndex }
+      );
+    });
   },
 
   moveLayerDown: (id) => {
@@ -191,34 +171,28 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     const belowZIndex = belowLayer.zIndex;
 
     // 交换两个图层的zIndex
-    set((state) => ({
-      layers: {
-        ...state.layers,
-        [id]: {
-          ...state.layers[id],
-          zIndex: belowZIndex,
-        },
-        [belowId]: {
-          ...state.layers[belowId],
-          zIndex: currentZIndex,
-        },
-      },
-    }));
+    set((state) => {
+      // 使用嵌套更新辅助函数处理多层嵌套
+      const stateWithCurrentLayerUpdate = updateNested(
+        state, 
+        ['layers', id], 
+        { zIndex: belowZIndex }
+      );
+      
+      return updateNested(
+        stateWithCurrentLayerUpdate, 
+        ['layers', belowId], 
+        { zIndex: currentZIndex }
+      );
+    });
   },
 
   setLayerZIndex: (id, zIndex) => {
     set((state) => {
       if (!state.layers[id]) return state;
-
-      return {
-        layers: {
-          ...state.layers,
-          [id]: {
-            ...state.layers[id],
-            zIndex,
-          },
-        },
-      };
+      
+      // 使用嵌套更新辅助函数
+      return updateNested(state, ['layers', id], { zIndex });
     });
   },
 
@@ -245,12 +219,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
 
   // 视口操作
   updateViewport: (updates) => {
-    set((state) => ({
-      viewport: {
-        ...state.viewport,
-        ...updates,
-      },
-    }));
+    set((state) => updateObject(state, 'viewport', updates));
   },
 
   resetViewport: () => {
@@ -267,22 +236,25 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     });
   },
 
+  // 添加绘画图层
   addDrawingLayer: (paths) => {
-    const id = generateId("drawing");
-
-    // 计算合适的zIndex
-    let maxZIndex = 0;
-    const { layers, layerIds } = get();
-    for (const layerId of layerIds) {
-      if (layers[layerId] && layers[layerId].zIndex > maxZIndex) {
-        maxZIndex = layers[layerId].zIndex;
-      }
+    // 确保有有效的路径
+    if (!paths || paths.length === 0) {
+      console.warn("尝试添加空的绘画图层");
+      return "";
     }
 
-    const layer: Layer = {
-      id,
+    // 计算当前最高的zIndex
+    const state = get();
+    const highestZIndex = Object.values(state.layers).reduce(
+      (max, layer) => Math.max(max, layer.zIndex || 0),
+      0
+    );
+
+    // 创建绘画图层
+    const drawingLayer: Omit<Layer, "id"> = {
       type: LayerType.DRAWING,
-      zIndex: maxZIndex + 1, // 使用计算出的zIndex
+      zIndex: highestZIndex + 1, // 放在最顶层
       visible: true,
       opacity: 1,
       transform: {
@@ -291,16 +263,9 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         rotation: 0,
       },
       paths,
-    };
+    } as Omit<Layer, "id">; // 使用类型断言处理paths属性
 
-    set((state) => ({
-      layers: {
-        ...state.layers,
-        [id]: layer,
-      },
-      layerIds: [...state.layerIds, id],
-    }));
-
-    return id;
+    // 添加图层
+    return get().addLayer(drawingLayer);
   },
 }));

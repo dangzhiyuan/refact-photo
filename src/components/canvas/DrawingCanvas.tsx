@@ -1,5 +1,5 @@
-import React, { useCallback, useState, useEffect, useRef } from "react";
-import { StyleSheet } from "react-native";
+import React, { useCallback, useState, useEffect, useRef, useMemo } from "react";
+import { StyleSheet, View, Text } from "react-native";
 import { Canvas, Path, Skia } from "@shopify/react-native-skia";
 import {
   PanGestureHandler,
@@ -21,188 +21,14 @@ interface DrawingCanvasProps {
   onLayerCreated?: (layerId: string) => void;
 }
 
-type Point = {
-  x: number;
-  y: number;
-};
-
-export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
-  width,
-  height,
-  onLayerCreated,
-}) => {
-  const [currentPath, setCurrentPath] = useState<DrawingPath | null>(null);
-  const { currentBrush } = useDrawingStore();
-  const { addLayer } = useCanvasStore();
-  const [paths, setPaths] = useState<DrawingPath[]>([]);
-  const currentMode = useEditorStore((state) => state.currentMode);
-  const modeRef = useRef<EditorMode>(currentMode);
-  const pathsRef = useRef<DrawingPath[]>([]);
-  const isFirstRender = useRef(true);
-
-  // 更新 pathsRef
-  useEffect(() => {
-    pathsRef.current = paths;
-    console.log("Paths updated:", paths.length);
-  }, [paths]);
-
-  // 在组件卸载时检查是否需要创建图层
-  useEffect(() => {
-    return () => {
-      console.log(
-        "DrawingCanvas unmounting, paths count:",
-        pathsRef.current.length
-      );
-      if (pathsRef.current.length > 0) {
-        console.log("Creating drawing layer on unmount");
-        try {
-          const layerId = addLayer({
-            type: LayerType.DRAWING,
-            zIndex: 0,
-            visible: true,
-            opacity: 1,
-            transform: {
-              position: { x: 0, y: 0 },
-              scale: 1,
-              rotation: 0,
-            },
-            paths: [...pathsRef.current],
-          } as DrawingLayer);
-
-          console.log("Created layer with ID on unmount:", layerId);
-          if (onLayerCreated) {
-            onLayerCreated(layerId);
-          }
-        } catch (error) {
-          console.error("Error creating drawing layer on unmount:", error);
-        }
-      }
-    };
-  }, [addLayer, onLayerCreated]);
-
-  // 监听绘画模式的变化
-  useEffect(() => {
-    // 跳过第一次渲染
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      modeRef.current = currentMode;
-      return;
-    }
-
-    const prevMode = modeRef.current;
-    console.log("Mode changed:", {
-      prevMode,
-      currentMode,
-      pathsCount: pathsRef.current.length,
-    });
-
-    // 只有在进入绘画模式时才清空路径
-    if (prevMode !== EditorMode.DRAW && currentMode === EditorMode.DRAW) {
-      console.log("Entering draw mode, clearing paths");
-      setPaths([]);
-      pathsRef.current = [];
-    }
-
-    modeRef.current = currentMode;
-  }, [currentMode]);
-
-  const onStart = useCallback(
-    (point: Point) => {
-      console.log("Starting new path");
-      const newPath: DrawingPath = {
-        id: Math.random().toString(),
-        points: [point],
-        color: currentBrush.color || "#000000",
-        strokeWidth: currentBrush.strokeWidth || 4,
-        opacity: currentBrush.opacity,
-        brushType: currentBrush.type,
-        brushSettings: currentBrush.settings,
-      };
-      setCurrentPath(newPath);
-    },
-    [currentBrush]
-  );
-
-  const onActive = useCallback(
-    (point: Point) => {
-      if (currentPath) {
-        setCurrentPath({
-          ...currentPath,
-          points: [...currentPath.points, point],
-        });
-      }
-    },
-    [currentPath]
-  );
-
-  const onEnd = useCallback(() => {
-    if (currentPath && currentPath.points.length >= 2) {
-      console.log("Ending path with points:", currentPath.points.length);
-      // 将当前路径添加到路径集合中
-      setPaths((prevPaths) => [...prevPaths, currentPath]);
-    }
-    setCurrentPath(null);
-  }, [currentPath]);
-
-  const gestureHandler =
-    useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
-      onStart: (event) => {
-        const point = { x: event.x, y: event.y };
-        runOnJS(onStart)(point);
-      },
-      onActive: (event) => {
-        const point = { x: event.x, y: event.y };
-        runOnJS(onActive)(point);
-      },
-      onEnd: () => {
-        runOnJS(onEnd)();
-      },
-    });
-
-  // 如果不在绘画模式，不渲染任何内容
-  if (currentMode !== EditorMode.DRAW) {
-    return null;
-  }
-
-  return (
-    <PanGestureHandler onGestureEvent={gestureHandler}>
-      <Animated.View style={StyleSheet.absoluteFill}>
-        <Canvas style={[styles.canvas, { width, height }]}>
-          {paths.map((path) => (
-            <Path
-              key={path.id}
-              path={generateSvgPath(path.points)}
-              color={path.color}
-              style="stroke"
-              strokeWidth={path.strokeWidth}
-              strokeCap="round"
-              strokeJoin="round"
-              opacity={path.opacity}
-            />
-          ))}
-          {currentPath && (
-            <Path
-              path={generateSvgPath(currentPath.points)}
-              color={currentPath.color}
-              style="stroke"
-              strokeWidth={currentPath.strokeWidth}
-              strokeCap="round"
-              strokeJoin="round"
-              opacity={currentPath.opacity}
-            />
-          )}
-        </Canvas>
-      </Animated.View>
-    </PanGestureHandler>
-  );
-};
-
-const generateSvgPath = (points: Point[]): string => {
+// 将SVG路径生成函数提取为工具函数，优化性能
+const generateSvgPath = (points: { x: number; y: number }[]): string => {
   if (points.length < 2) return "";
 
   const start = points[0];
   let path = `M ${start.x} ${start.y}`;
 
+  // 使用二次贝塞尔曲线创建平滑路径
   for (let i = 1; i < points.length - 1; i++) {
     const p1 = points[i];
     const p2 = points[i + 1];
@@ -211,14 +37,311 @@ const generateSvgPath = (points: Point[]): string => {
     path += ` Q ${p1.x} ${p1.y}, ${xc} ${yc}`;
   }
 
-  const last = points[points.length - 1];
-  path += ` L ${last.x} ${last.y}`;
+  // 将最后一点添加到路径
+  if (points.length > 1) {
+    const last = points[points.length - 1];
+    path += ` L ${last.x} ${last.y}`;
+  }
 
   return path;
 };
 
+// 简单的路径组件
+const MemoPath = React.memo(({ path }: { path: DrawingPath }) => {
+  if (!path || !path.points || path.points.length < 2) return null;
+  
+  const svgPath = generateSvgPath(path.points);
+  
+  return (
+    <Path
+      path={svgPath}
+      color={path.color}
+      style="stroke"
+      strokeWidth={path.strokeWidth}
+      strokeCap="round"
+      strokeJoin="round"
+      opacity={path.opacity}
+    />
+  );
+});
+
+export const DrawingCanvas: React.FC<DrawingCanvasProps> = React.memo(
+  ({ width, height, onLayerCreated }) => {
+    // 添加一个状态指示器，检测组件是否仍处于活动状态
+    const isComponentMounted = useRef(true);
+    
+    const [currentPath, setCurrentPath] = useState<DrawingPath | null>(null);
+    const [paths, setPaths] = useState<DrawingPath[]>([]);
+    const { currentBrush } = useDrawingStore();
+    const { addLayer, addDrawingLayer } = useCanvasStore();
+    const currentMode = useEditorStore((state) => state.currentMode);
+    
+    // 存储上一次的模式，用于检测模式变化
+    const prevModeRef = useRef<EditorMode>(currentMode);
+    
+    // 在组件卸载时设置标志
+    useEffect(() => {
+      isComponentMounted.current = true;
+      console.log('[DrawingCanvas] Component mounted');
+      
+      return () => {
+        console.log('[DrawingCanvas] Component unmounting');
+        isComponentMounted.current = false;
+      };
+    }, []);
+    
+    // 基本的路径引用，用于积累路径
+    const pathsRef = useRef<DrawingPath[]>([]);
+    
+    // 简单地更新引用，没有复杂逻辑
+    useEffect(() => {
+      pathsRef.current = paths;
+    }, [paths]);
+    
+    // 直接使用addDrawingLayer方法创建图层
+    const createLayer = useCallback(() => {
+      if (!isComponentMounted.current) {
+        console.log('[DrawingCanvas] Attempted to create layer after unmount, aborting');
+        return;
+      }
+      
+      if (pathsRef.current.length === 0) {
+        console.log('[DrawingCanvas] No paths to create layer');
+        return;
+      }
+      
+      try {
+        console.log('[DrawingCanvas] Creating drawing layer with paths:', pathsRef.current.length);
+        
+        // 使用专门的绘图图层创建方法
+        const layerId = addDrawingLayer([...pathsRef.current]);
+        
+        if (onLayerCreated && isComponentMounted.current) {
+          onLayerCreated(layerId);
+        }
+        
+        if (isComponentMounted.current) {
+          console.log('[DrawingCanvas] Layer created, clearing paths');
+          setPaths([]);
+        }
+      } catch (error) {
+        console.error("Error creating drawing layer:", error);
+      }
+    }, [addDrawingLayer, onLayerCreated]);
+    
+    // 监听模式变化，从绘画模式切换出去时保存图层
+    useEffect(() => {
+      console.log('[DrawingCanvas] Mode changed:', currentMode, 'Previous:', prevModeRef.current);
+      
+      // 直接检查当前模式和路径状态
+      if (prevModeRef.current === EditorMode.DRAW && 
+          currentMode !== EditorMode.DRAW) {
+        
+        console.log('[DrawingCanvas] Exited drawing mode');
+        
+        // 如果有绘制内容，则保存为图层
+        const hasCurrentPath = currentPath !== null;
+        const hasPaths = paths.length > 0;
+        
+        if (hasCurrentPath || hasPaths) {
+          console.log('[DrawingCanvas] Saving drawing content on mode change');
+          
+          // 如果有当前正在绘制的路径，先保存它
+          if (hasCurrentPath) {
+            console.log('[DrawingCanvas] Adding current path to paths collection');
+            setPaths(prev => {
+              const updatedPaths = [...prev, currentPath!];
+              // 立即更新pathsRef以确保createLayer能访问到最新路径
+              pathsRef.current = updatedPaths;
+              return updatedPaths;
+            });
+            setCurrentPath(null);
+          }
+          
+          // 在下一个事件循环中创建图层，确保状态已更新
+          setTimeout(() => {
+            if (isComponentMounted.current) {
+              console.log('[DrawingCanvas] Creating layer after mode change');
+              createLayer();
+            }
+          }, 50);
+        } else {
+          console.log('[DrawingCanvas] No drawing content to save');
+        }
+      }
+      
+      // 更新上一次的模式
+      prevModeRef.current = currentMode;
+    }, [currentMode, currentPath, paths, createLayer]);
+    
+    // 组件卸载时创建图层
+    useEffect(() => {
+      return () => {
+        if (pathsRef.current.length > 0) {
+          console.log('[DrawingCanvas] Component unmounting with paths, creating layer');
+          // 直接调用createLayer，不通过状态更新
+          if (isComponentMounted.current) {
+            createLayer();
+          } else {
+            // 如果组件已卸载但仍需保存，直接使用store方法
+            addDrawingLayer([...pathsRef.current]);
+          }
+        }
+      };
+    }, [createLayer, addDrawingLayer]);
+    
+    // 开始绘制函数
+    const startDrawing = useCallback((x: number, y: number) => {
+      if (!isComponentMounted.current) {
+        console.log('[DrawingCanvas] Attempted to start drawing after unmount, aborting');
+        return;
+      }
+      
+      console.log('[DrawingCanvas] startDrawing called', { x, y });
+      // 创建简单的路径对象
+      const newPath: DrawingPath = {
+        id: `path_${Date.now()}`,
+        points: [{ x, y }],
+        color: currentBrush.color,
+        strokeWidth: currentBrush.strokeWidth,
+        opacity: currentBrush.opacity,
+        brushType: currentBrush.type,
+        brushSettings: currentBrush.settings
+      };
+      
+      console.log('[DrawingCanvas] Created new path:', newPath.id);
+      setCurrentPath(newPath);
+    }, [currentBrush]);
+    
+    // 添加点函数
+    const addPoint = useCallback((x: number, y: number) => {
+      if (!isComponentMounted.current) {
+        console.log('[DrawingCanvas] Attempted to add point after unmount, aborting');
+        return;
+      }
+      
+      console.log('[DrawingCanvas] addPoint called', { x, y });
+      if (!currentPath) {
+        console.log('[DrawingCanvas] No current path, ignoring point');
+        return;
+      }
+      
+      // 创建更新后的路径对象
+      const updatedPath = {
+        ...currentPath,
+        points: [...currentPath.points, { x, y }]
+      };
+      
+      console.log('[DrawingCanvas] Updated path:', updatedPath.id, 'total points:', updatedPath.points.length);
+      setCurrentPath(updatedPath);
+    }, [currentPath]);
+    
+    // 结束绘制函数
+    const endDrawing = useCallback(() => {
+      if (!isComponentMounted.current) {
+        console.log('[DrawingCanvas] Attempted to end drawing after unmount, aborting');
+        return;
+      }
+      
+      console.log('[DrawingCanvas] endDrawing called');
+      if (!currentPath) {
+        console.log('[DrawingCanvas] No current path to end');
+        return;
+      }
+      
+      console.log('[DrawingCanvas] Saving path:', currentPath.id, 'with', currentPath.points.length, 'points');
+      
+      // 保存当前路径到路径数组
+      setPaths(prev => {
+        const updatedPaths = [...prev, currentPath];
+        // 立即更新pathsRef以确保下面的代码可以访问到最新路径
+        pathsRef.current = updatedPaths;
+        return updatedPaths;
+      });
+      
+      // 清除当前绘制路径
+      setCurrentPath(null);
+      
+      // 自动保存逻辑：当路径数量超过一定数值或者单个路径点数过多时，自动创建图层
+      const currentPathPointCount = currentPath.points.length;
+      const totalPathsCount = paths.length + 1; // 加上当前刚添加的路径
+      
+      if (totalPathsCount > 20 || currentPathPointCount > 500) {
+        console.log('[DrawingCanvas] Auto-saving drawing due to paths count or points threshold');
+        
+        // 使用setTimeout确保setPaths已执行完毕
+        setTimeout(() => {
+          if (isComponentMounted.current) {
+            createLayer();
+          }
+        }, 50);
+      }
+    }, [currentPath, paths.length, createLayer]);
+    
+    // 极简的手势处理器
+    const handleGestureEvent = useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
+      onStart: (event) => {
+        'worklet';
+        console.log('[DrawingCanvas:worklet] onStart event', event.x, event.y);
+        // 只有在绘画模式下才处理手势
+        if (currentMode === EditorMode.DRAW) {
+          runOnJS(startDrawing)(event.x, event.y);
+        } else {
+          console.log('[DrawingCanvas:worklet] Ignoring gesture start - not in drawing mode');
+        }
+      },
+      onActive: (event) => {
+        'worklet';
+        // 只有在绘画模式下才处理手势
+        if (currentMode === EditorMode.DRAW) {
+          runOnJS(addPoint)(event.x, event.y);
+        }
+      },
+      onEnd: () => {
+        'worklet';
+        // 只有在绘画模式下才处理手势
+        if (currentMode === EditorMode.DRAW) {
+          runOnJS(endDrawing)();
+        } else {
+          console.log('[DrawingCanvas:worklet] Ignoring gesture end - not in drawing mode');
+        }
+      },
+    });
+    
+    // 渲染所有保存的路径
+    const pathComponents = useMemo(() => {
+      return paths.map(path => <MemoPath key={path.id} path={path} />);
+    }, [paths]);
+    
+    // 渲染当前正在绘制的路径
+    const currentPathComponent = useMemo(() => {
+      if (!currentPath) return null;
+      return <MemoPath key="current" path={currentPath} />;
+    }, [currentPath]);
+    
+    return (
+      <PanGestureHandler
+        onGestureEvent={handleGestureEvent}
+        minDist={0}
+        avgTouches={false}
+      >
+        <Animated.View style={{ width, height }}>
+          <Canvas style={styles.canvas}>
+            {pathComponents}
+            {currentPathComponent}
+          </Canvas>
+        </Animated.View>
+      </PanGestureHandler>
+    );
+  },
+  (prevProps, nextProps) => {
+    return prevProps.width === nextProps.width && 
+           prevProps.height === nextProps.height;
+  }
+);
+
 const styles = StyleSheet.create({
   canvas: {
     flex: 1,
-  },
+  }
 });

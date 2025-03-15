@@ -1,7 +1,9 @@
 import { useCanvasGestures } from "./useCanvasGestures";
 import { useCanvasStore } from "../store/canvasStore";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { LayerType } from "../core/types/canvas";
+import { createFixedSizeGestureHook } from "./createGestureFactory";
+import { MAX_DRAWING_LAYERS } from "../core/constants";
 
 // 定义变换状态的接口
 interface TransformState {
@@ -12,62 +14,41 @@ interface TransformState {
   };
 }
 
-export const useDrawingGestures = (
-  drawingLayers: string[],
+/**
+ * 为单个绘画图层创建手势处理
+ * 这个函数将被工厂函数重复调用
+ */
+const createLayerGesture = (
+  index: number, 
+  layerId: string | undefined, 
   onDragStart: (layerId: string) => void
 ) => {
   const { layers, transformLayer } = useCanvasStore();
-
+  
   // 创建对每个图层当前变换状态的引用，以避免在hook之间的闭包问题
-  const layerTransforms = useRef<Record<string, TransformState>>({});
-
-  // 当图层变化时，确保我们有最新的变换状态
-  useEffect(() => {
-    drawingLayers.forEach((layerId) => {
-      const layer = layers[layerId];
-      if (layer && layer.type === LayerType.DRAWING) {
-        layerTransforms.current[layerId] = {
-          scale: layer.transform?.scale || 1,
-          position: {
-            x: layer.transform?.position?.x || 0,
-            y: layer.transform?.position?.y || 0,
-          },
-        };
-      }
-    });
-  }, [layers, drawingLayers]);
-
-  // 创建处理变换结束的函数
-  const createTransformEndHandler = (layerIndex: number) => {
-    return (transform: { scale: number; x: number; y: number }) => {
-      const layerId = drawingLayers[layerIndex];
-      if (!layerId) return;
-
-      // 更新我们的引用
-      layerTransforms.current[layerId] = {
-        scale: transform.scale,
-        position: { x: transform.x, y: transform.y },
+  const layerTransformRef = useRef<TransformState>({
+    scale: 1,
+    position: { x: 0, y: 0 }
+  });
+  
+  // 如果layerId存在，获取初始变换状态
+  if (layerId) {
+    const layer = layers[layerId];
+    if (layer && layer.type === LayerType.DRAWING) {
+      layerTransformRef.current = {
+        scale: layer.transform?.scale || 1,
+        position: {
+          x: layer.transform?.position?.x || 0,
+          y: layer.transform?.position?.y || 0,
+        },
       };
-
-      // 保存到store
-      console.log(`保存图层${layerId}变换:`, transform);
-      transformLayer(layerId, {
-        scale: transform.scale,
-        position: { x: transform.x, y: transform.y },
-      });
-    };
-  };
-
-  // 创建获取初始状态的函数
-  const getLayerInitialScale = (layerIndex: number): number => {
-    const layerId = drawingLayers[layerIndex];
-    if (!layerId) return 1;
-
-    const transform = layerTransforms.current[layerId];
-    if (transform) {
-      return transform.scale;
     }
-
+  }
+  
+  // 获取初始缩放值
+  const getInitialScale = (): number => {
+    if (!layerId) return 1;
+    
     const layer = layers[layerId];
     if (
       layer &&
@@ -77,22 +58,14 @@ export const useDrawingGestures = (
     ) {
       return layer.transform.scale;
     }
-
+    
     return 1;
   };
-
-  // 创建获取初始位置的函数
-  const getLayerInitialOffset = (
-    layerIndex: number
-  ): { x: number; y: number } => {
-    const layerId = drawingLayers[layerIndex];
+  
+  // 获取初始位置
+  const getInitialOffset = (): { x: number; y: number } => {
     if (!layerId) return { x: 0, y: 0 };
-
-    const transform = layerTransforms.current[layerId];
-    if (transform) {
-      return transform.position;
-    }
-
+    
     const layer = layers[layerId];
     if (
       layer &&
@@ -105,80 +78,45 @@ export const useDrawingGestures = (
         y: layer.transform.position.y,
       };
     }
-
+    
     return { x: 0, y: 0 };
   };
-
-  const gesture0 = useCanvasGestures({
+  
+  // 创建手势处理结束的回调
+  const handleTransformEnd = (transform: { scale: number; x: number; y: number }) => {
+    if (!layerId) return;
+    
+    // 更新引用
+    layerTransformRef.current = {
+      scale: transform.scale,
+      position: { x: transform.x, y: transform.y },
+    };
+    
+    // 保存到store
+    transformLayer(layerId, {
+      scale: transform.scale,
+      position: { x: transform.x, y: transform.y },
+    });
+  };
+  
+  // 创建手势
+  return useCanvasGestures({
     contentWidth: 0,
     contentHeight: 0,
-    initialScale: getLayerInitialScale(0),
-    initialOffset: getLayerInitialOffset(0),
+    initialScale: getInitialScale(),
+    initialOffset: getInitialOffset(),
     autoFit: false,
     onDragStart: () => {
-      if (drawingLayers[0]) {
-        onDragStart(drawingLayers[0]);
+      if (layerId) {
+        onDragStart(layerId);
       }
     },
-    onTransformEnd: createTransformEndHandler(0),
+    onTransformEnd: handleTransformEnd,
   });
-
-  const gesture1 = useCanvasGestures({
-    contentWidth: 0,
-    contentHeight: 0,
-    initialScale: getLayerInitialScale(1),
-    initialOffset: getLayerInitialOffset(1),
-    autoFit: false,
-    onDragStart: () => {
-      if (drawingLayers[1]) {
-        onDragStart(drawingLayers[1]);
-      }
-    },
-    onTransformEnd: createTransformEndHandler(1),
-  });
-
-  const gesture2 = useCanvasGestures({
-    contentWidth: 0,
-    contentHeight: 0,
-    initialScale: getLayerInitialScale(2),
-    initialOffset: getLayerInitialOffset(2),
-    autoFit: false,
-    onDragStart: () => {
-      if (drawingLayers[2]) {
-        onDragStart(drawingLayers[2]);
-      }
-    },
-    onTransformEnd: createTransformEndHandler(2),
-  });
-
-  const gesture3 = useCanvasGestures({
-    contentWidth: 0,
-    contentHeight: 0,
-    initialScale: getLayerInitialScale(3),
-    initialOffset: getLayerInitialOffset(3),
-    autoFit: false,
-    onDragStart: () => {
-      if (drawingLayers[3]) {
-        onDragStart(drawingLayers[3]);
-      }
-    },
-    onTransformEnd: createTransformEndHandler(3),
-  });
-
-  const gesture4 = useCanvasGestures({
-    contentWidth: 0,
-    contentHeight: 0,
-    initialScale: getLayerInitialScale(4),
-    initialOffset: getLayerInitialOffset(4),
-    autoFit: false,
-    onDragStart: () => {
-      if (drawingLayers[4]) {
-        onDragStart(drawingLayers[4]);
-      }
-    },
-    onTransformEnd: createTransformEndHandler(4),
-  });
-
-  // 返回所有手势状态
-  return [gesture0, gesture1, gesture2, gesture3, gesture4];
 };
+
+// 使用工厂函数创建处理多个图层的钩子
+export const useDrawingGestures = createFixedSizeGestureHook(
+  MAX_DRAWING_LAYERS,
+  createLayerGesture
+);
