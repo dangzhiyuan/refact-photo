@@ -308,37 +308,63 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
 
             // 获取预先计算的边界
             const bounds = pathBounds[layerId] || { width: 100, height: 100 };
-            const frameWidth = bounds.width;
-            const frameHeight = bounds.height;
 
             return (
               <View
                 key={layerId}
                 style={[
-                  StyleSheet.absoluteFill,
-                  { opacity: visibleLayers[layerId] !== false ? 1 : 0 },
-                  // 使用图层自身的zIndex加上基础值
-                  { zIndex: 10 + (layer.zIndex || 0) },
+                  // 不使用 absoluteFill，但给定明确的定位
+                  {
+                    position: 'absolute',
+                    left: bounds.x,
+                    top: bounds.y,
+                    width: bounds.width,
+                    height: bounds.height,
+                    opacity: visibleLayers[layerId] !== false ? 1 : 0,
+                    zIndex: 10 + (layer.zIndex || 0)
+                  }
                 ]}
                 pointerEvents={activeCanvas === layerId ? "auto" : "none"}
               >
                 <GestureDetector gesture={gesture}>
                   <Animated.View
-                    style={[StyleSheet.absoluteFill, animatedStyle]}
+                    style={[
+                      // 使用固定尺寸而不是absoluteFill
+                      {
+                        width: bounds.width,
+                        height: bounds.height,
+                      }, 
+                      animatedStyle
+                    ]}
                   >
-                    <Canvas style={StyleSheet.absoluteFill}>
-                      {layer.paths.map((path) => (
-                        <Path
-                          key={path.id}
-                          path={generateSvgPath(path.points)}
-                          color={path.color}
-                          style="stroke"
-                          strokeWidth={path.strokeWidth}
-                          strokeCap="round"
-                          strokeJoin="round"
-                          opacity={path.opacity}
-                        />
-                      ))}
+                    <Canvas 
+                      style={{
+                        width: bounds.width, 
+                        height: bounds.height
+                      }}
+                    >
+                      {layer.paths.map((path) => {
+                        // 调整路径点相对于边界框左上角
+                        const adjustedPath = {
+                          ...path,
+                          points: path.points.map(point => ({
+                            x: point.x - bounds.x,
+                            y: point.y - bounds.y
+                          }))
+                        };
+                        return (
+                          <Path
+                            key={path.id}
+                            path={generateSvgPath(adjustedPath.points)}
+                            color={path.color}
+                            style="stroke"
+                            strokeWidth={path.strokeWidth}
+                            strokeCap="round"
+                            strokeJoin="round"
+                            opacity={path.opacity}
+                          />
+                        );
+                      })}
                     </Canvas>
                     
                     {/* 选择框放在同一个变换容器内 */}
@@ -346,18 +372,18 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
                       <View 
                         style={{
                           position: 'absolute',
-                          left: bounds.x,
-                          top: bounds.y,
-                          width: frameWidth,
-                          height: frameHeight,
+                          left: 0,
+                          top: 0,
+                          width: bounds.width,
+                          height: bounds.height,
                           zIndex: 1 // 确保选择框在绘画内容上方
                         }}
                       >
                         {/* 使用统一的SelectionFrame组件 */}
                         <SelectionFrame
                           position={dummyPosition} // 使用虚拟位置，因为我们已经将选择框放在正确位置
-                          width={frameWidth}
-                          height={frameHeight}
+                          width={bounds.width}
+                          height={bounds.height}
                           rotation={dummyRotation}
                           scale={dummyScale} // 使用虚拟缩放，因为我们已经在容器中应用了缩放
                           onDelete={handleDeleteDrawing}

@@ -2,11 +2,11 @@ import React, { useCallback, useState, useEffect, useRef, useMemo } from "react"
 import { StyleSheet, View, Text } from "react-native";
 import { Canvas, Path, Skia } from "@shopify/react-native-skia";
 import {
-  PanGestureHandler,
-  PanGestureHandlerGestureEvent,
+  GestureDetector,
+  Gesture,
 } from "react-native-gesture-handler";
 import Animated, {
-  useAnimatedGestureHandler,
+  useAnimatedStyle,
   runOnJS,
 } from "react-native-reanimated";
 import { useDrawingStore } from "../../store/drawingStore";
@@ -278,35 +278,41 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = React.memo(
       }
     }, [currentPath, paths.length, createLayer]);
     
-    // 极简的手势处理器
-    const handleGestureEvent = useAnimatedGestureHandler<PanGestureHandlerGestureEvent>({
-      onStart: (event) => {
-        'worklet';
-        console.log('[DrawingCanvas:worklet] onStart event', event.x, event.y);
+    // 使用新的Gesture API创建手势
+    const panGesture = Gesture.Pan()
+      .minDistance(0)
+      .averageTouches(false)
+      .onStart((event) => {
+        console.log('[DrawingCanvas:gesture] onStart event', event.x, event.y);
         // 只有在绘画模式下才处理手势
         if (currentMode === EditorMode.DRAW) {
-          runOnJS(startDrawing)(event.x, event.y);
+          // 添加坐标验证，确保触摸点在画布范围内
+          if (event.x >= 0 && event.x <= width && event.y >= 0 && event.y <= height) {
+            runOnJS(startDrawing)(event.x, event.y);
+          } else {
+            console.log('[DrawingCanvas:gesture] Touch outside canvas boundaries, ignoring');
+          }
         } else {
-          console.log('[DrawingCanvas:worklet] Ignoring gesture start - not in drawing mode');
+          console.log('[DrawingCanvas:gesture] Ignoring gesture start - not in drawing mode');
         }
-      },
-      onActive: (event) => {
-        'worklet';
+      })
+      .onUpdate((event) => {
         // 只有在绘画模式下才处理手势
         if (currentMode === EditorMode.DRAW) {
-          runOnJS(addPoint)(event.x, event.y);
+          // 添加坐标验证，确保触摸点在画布范围内或已经开始绘制
+          if (event.x >= 0 && event.x <= width && event.y >= 0 && event.y <= height) {
+            runOnJS(addPoint)(event.x, event.y);
+          }
         }
-      },
-      onEnd: () => {
-        'worklet';
+      })
+      .onEnd(() => {
         // 只有在绘画模式下才处理手势
         if (currentMode === EditorMode.DRAW) {
           runOnJS(endDrawing)();
         } else {
-          console.log('[DrawingCanvas:worklet] Ignoring gesture end - not in drawing mode');
+          console.log('[DrawingCanvas:gesture] Ignoring gesture end - not in drawing mode');
         }
-      },
-    });
+      });
     
     // 渲染所有保存的路径
     const pathComponents = useMemo(() => {
@@ -320,18 +326,14 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = React.memo(
     }, [currentPath]);
     
     return (
-      <PanGestureHandler
-        onGestureEvent={handleGestureEvent}
-        minDist={0}
-        avgTouches={false}
-      >
+      <GestureDetector gesture={panGesture}>
         <Animated.View style={{ width, height }}>
           <Canvas style={styles.canvas}>
             {pathComponents}
             {currentPathComponent}
           </Canvas>
         </Animated.View>
-      </PanGestureHandler>
+      </GestureDetector>
     );
   },
   (prevProps, nextProps) => {
