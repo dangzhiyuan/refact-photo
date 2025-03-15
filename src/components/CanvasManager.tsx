@@ -1,5 +1,5 @@
-import React, { useMemo, useCallback, useEffect } from "react";
-import { View, StyleSheet, Dimensions, TouchableOpacity, Text } from "react-native";
+import React, { useMemo, useCallback } from "react";
+import { View, StyleSheet, Dimensions } from "react-native";
 import { BaseCanvas } from "./canvas/BaseCanvas";
 import { ContentCanvas } from "./canvas/ContentCanvas";
 import { StickerCanvas } from "./canvas/StickerCanvas";
@@ -8,7 +8,7 @@ import { useCanvasStore } from "../store/canvasStore";
 import { LayerType, DrawingPath } from "../core/types/canvas";
 import { Canvas, Path } from "@shopify/react-native-skia";
 import { GestureDetector } from "react-native-gesture-handler";
-import Animated, { useAnimatedStyle, useSharedValue, useAnimatedReaction } from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { useDrawingGestures } from "../hooks/useDrawingGestures";
 import { SelectionFrame } from "./common/SelectionFrame";
 import { MAX_DRAWING_LAYERS } from "../core/constants";
@@ -116,30 +116,6 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
   const dummyScale = useSharedValue(1);
   const windowSize = Dimensions.get('window');
 
-  // 为每个可能的绘画图层预创建位置共享值（直接在顶层创建，不在useMemo中）
-  const adjustedPosition0 = useSharedValue({ x: 0, y: 0 });
-  const adjustedPosition1 = useSharedValue({ x: 0, y: 0 });
-  const adjustedPosition2 = useSharedValue({ x: 0, y: 0 });
-  const adjustedPosition3 = useSharedValue({ x: 0, y: 0 });
-  const adjustedPosition4 = useSharedValue({ x: 0, y: 0 });
-  
-  // 合并到一个数组中
-  const adjustedPositions = useMemo(() => {
-    return [
-      adjustedPosition0,
-      adjustedPosition1,
-      adjustedPosition2,
-      adjustedPosition3,
-      adjustedPosition4,
-    ];
-  }, [
-    adjustedPosition0,
-    adjustedPosition1,
-    adjustedPosition2,
-    adjustedPosition3,
-    adjustedPosition4,
-  ]);
-
   const handleCanvasSelect = useCallback(
     (canvasId: string) => {
       if (canvasId !== activeCanvas) {
@@ -188,130 +164,6 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
     
     return bounds;
   }, [drawingLayers, layers]);
-
-  // 设置每个图层的位置反应
-  useEffect(() => {
-    drawingLayers.forEach((layerId, index) => {
-      if (index < MAX_DRAWING_LAYERS && gestureStates[index]) {
-        const bounds = pathBounds[layerId] || { x: 0, y: 0, width: 100, height: 100 };
-        const position = adjustedPositions[index];
-        
-        // 立即更新位置
-        position.value = {
-          x: gestureStates[index].offset.value.x + bounds.x,
-          y: gestureStates[index].offset.value.y + bounds.y
-        };
-      }
-    });
-  }, [drawingLayers, gestureStates, pathBounds, adjustedPositions]);
-
-  // 为每个预定义的位置创建独立的 useAnimatedReaction
-  useAnimatedReaction(
-    () => {
-      if (!gestureStates[0]) return null;
-      const layerId = drawingLayers[0];
-      if (!layerId) return null;
-      const bounds = pathBounds[layerId] || { x: 0, y: 0, width: 100, height: 100 };
-      return { 
-        offset: gestureStates[0].offset.value, 
-        bounds, 
-        scale: gestureStates[0].scale.value 
-      };
-    },
-    (result) => {
-      if (!result) return;
-      // 注意：我们这里直接传递原始坐标，因为SelectionFrame会作为独立元素渲染
-      // 但我们需要考虑缩放对边界的影响
-      adjustedPosition0.value = {
-        x: result.offset.x + result.bounds.x * result.scale,
-        y: result.offset.y + result.bounds.y * result.scale
-      };
-    }
-  );
-
-  useAnimatedReaction(
-    () => {
-      if (!gestureStates[1]) return null;
-      const layerId = drawingLayers[1];
-      if (!layerId) return null;
-      const bounds = pathBounds[layerId] || { x: 0, y: 0, width: 100, height: 100 };
-      return { 
-        offset: gestureStates[1].offset.value, 
-        bounds, 
-        scale: gestureStates[1].scale.value 
-      };
-    },
-    (result) => {
-      if (!result) return;
-      adjustedPosition1.value = {
-        x: result.offset.x + result.bounds.x * result.scale,
-        y: result.offset.y + result.bounds.y * result.scale
-      };
-    }
-  );
-
-  useAnimatedReaction(
-    () => {
-      if (!gestureStates[2]) return null;
-      const layerId = drawingLayers[2];
-      if (!layerId) return null;
-      const bounds = pathBounds[layerId] || { x: 0, y: 0, width: 100, height: 100 };
-      return { 
-        offset: gestureStates[2].offset.value, 
-        bounds, 
-        scale: gestureStates[2].scale.value 
-      };
-    },
-    (result) => {
-      if (!result) return;
-      adjustedPosition2.value = {
-        x: result.offset.x + result.bounds.x * result.scale,
-        y: result.offset.y + result.bounds.y * result.scale
-      };
-    }
-  );
-
-  useAnimatedReaction(
-    () => {
-      if (!gestureStates[3]) return null;
-      const layerId = drawingLayers[3];
-      if (!layerId) return null;
-      const bounds = pathBounds[layerId] || { x: 0, y: 0, width: 100, height: 100 };
-      return { 
-        offset: gestureStates[3].offset.value, 
-        bounds, 
-        scale: gestureStates[3].scale.value 
-      };
-    },
-    (result) => {
-      if (!result) return;
-      adjustedPosition3.value = {
-        x: result.offset.x + result.bounds.x * result.scale,
-        y: result.offset.y + result.bounds.y * result.scale
-      };
-    }
-  );
-
-  useAnimatedReaction(
-    () => {
-      if (!gestureStates[4]) return null;
-      const layerId = drawingLayers[4];
-      if (!layerId) return null;
-      const bounds = pathBounds[layerId] || { x: 0, y: 0, width: 100, height: 100 };
-      return { 
-        offset: gestureStates[4].offset.value, 
-        bounds, 
-        scale: gestureStates[4].scale.value 
-      };
-    },
-    (result) => {
-      if (!result) return;
-      adjustedPosition4.value = {
-        x: result.offset.x + result.bounds.x * result.scale,
-        y: result.offset.y + result.bounds.y * result.scale
-      };
-    }
-  );
 
   // 定义所有动画样式Hooks (在组件顶层直接定义)
   const animatedStyle0 = useAnimatedStyle(() => {
@@ -459,9 +311,6 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
             const frameWidth = bounds.width;
             const frameHeight = bounds.height;
 
-            // 创建考虑边界框的位置共享值
-            const adjustedPosition = adjustedPositions[index];
-            
             return (
               <View
                 key={layerId}
@@ -501,36 +350,21 @@ export const CanvasManager: React.FC<CanvasManagerProps> = ({
                           top: bounds.y,
                           width: frameWidth,
                           height: frameHeight,
-                          pointerEvents: 'none'
+                          zIndex: 1 // 确保选择框在绘画内容上方
                         }}
                       >
-                        <View
-                          style={{
-                            borderWidth: 2,
-                            borderColor: '#34C759',
-                            borderStyle: 'dashed',
-                            borderRadius: 4,
-                            width: '100%',
-                            height: '100%'
-                          }}
+                        {/* 使用统一的SelectionFrame组件 */}
+                        <SelectionFrame
+                          position={dummyPosition} // 使用虚拟位置，因为我们已经将选择框放在正确位置
+                          width={frameWidth}
+                          height={frameHeight}
+                          rotation={dummyRotation}
+                          scale={dummyScale} // 使用虚拟缩放，因为我们已经在容器中应用了缩放
+                          onDelete={handleDeleteDrawing}
+                          onRotate={() => {}}
+                          onResize={() => {}}
+                          onEdit={() => {}}
                         />
-                        {/* 删除按钮 */}
-                        <TouchableOpacity 
-                          style={{
-                            position: 'absolute',
-                            top: -15,
-                            right: -15,
-                            width: 30,
-                            height: 30,
-                            backgroundColor: '#FF3B30',
-                            borderRadius: 15,
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                          onPress={handleDeleteDrawing}
-                        >
-                          <Text style={{color: 'white', fontSize: 18}}>✕</Text>
-                        </TouchableOpacity>
                       </View>
                     )}
                   </Animated.View>
